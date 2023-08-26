@@ -1,0 +1,7 @@
+{
+    "go.testEnvVars": {
+        "SINGLE_TEST": "1"
+    },
+    "go.testEnvFile": "${workspaceFolder}/.env",
+    "editor.trimAutoWhitespace": true,
+}
