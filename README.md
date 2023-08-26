@@ -1,0 +1,2 @@
+# overseer
+EQEmu Management Suite
