@@ -43,6 +43,7 @@ func run() error {
 		if strings.Contains(strings.ToLower(choice), "yes") {
 			fmt.Println("OK, flushing config! You'll be prmopted new install options.")
 			config.Expansion = ""
+			config.PortableDatabase = 0
 		}
 	}
 
@@ -67,48 +68,13 @@ func run() error {
 		return fmt.Errorf("download quests: %w", err)
 	}
 
+	err = downloadPortableDatabase(config)
+	if err != nil {
+		return fmt.Errorf("download portable database: %w", err)
+	}
+
 	seconds := fmt.Sprintf("%.2f", time.Since(start).Seconds())
 	message.OK("Successfully installed in " + seconds + " seconds")
-
-	return nil
-}
-
-func installConfigSetup(config *config.OverseerConfiguration) error {
-	if config.Expansion != "" {
-		return nil
-	}
-
-	choice, err := selection.New("Expansion?", []string{
-		"Classic",
-		"Kunark",
-		"Velious",
-		"Luclin",
-		"PoP",
-		"Ykesha",
-		"Gates",
-		"Omens",
-		"Dragons",
-	}).RunPrompt()
-	if err != nil {
-		return fmt.Errorf("select expansion: %w", err)
-	}
-	config.Expansion = strings.ToLower(choice)
-
-	choice, err = selection.New("Setup? (default recommended, docker experimental)", []string{
-		"default",
-		"docker",
-	}).RunPrompt()
-	if err != nil {
-		return fmt.Errorf("select setup: %w", err)
-	}
-	config.Setup = strings.ToLower(choice)
-
-	err = config.Save()
-	if err != nil {
-		return fmt.Errorf("save config: %w", err)
-	}
-
-	message.OKf("Expansion: %s\n", config.Expansion)
 
 	return nil
 }
@@ -205,6 +171,41 @@ func downloadMaps(config *config.OverseerConfiguration) error {
 	}
 
 	err = zip.Unpack(cachePath, "server/maps/")
+	if err != nil {
+		return fmt.Errorf("unpack %s: %w", filepath.Base(cachePath), err)
+	}
+
+	message.OK("Downloaded maps")
+
+	return nil
+}
+
+func downloadPortableDatabase(config *config.OverseerConfiguration) error {
+	if config.PortableDatabase == 0 {
+		return nil
+	}
+	err := os.MkdirAll("server/database", 0755)
+	if err != nil {
+		return fmt.Errorf("mkdir server/database: %w", err)
+	}
+
+	url := "https://archive.mariadb.org/mariadb-10.6.10/winx64-packages/mariadb-10.6.10-winx64.zip"
+	cachePath := "server/cache/mariadb-10.6.10-winx64.zip"
+	if runtime.GOOS != "windows" {
+		url = "https://archive.mariadb.org/mariadb-10.6.10/bintar-linux-systemd-x86_64/mariadb-10.6.10-linux-systemd-x86_64.tar.gz"
+		cachePath = "server/cache/mariadb-10.6.10-linux-systemd-x86_64.tar.gz"
+	}
+
+	isCache, err := download.Save(url, cachePath)
+	if err != nil {
+		return fmt.Errorf("download %s: %w", filepath.Base(cachePath), err)
+	}
+
+	if isCache {
+		fmt.Println("Using cached download at", cachePath)
+	}
+
+	err = zip.Unpack(cachePath, "server/database/")
 	if err != nil {
 		return fmt.Errorf("unpack %s: %w", filepath.Base(cachePath), err)
 	}

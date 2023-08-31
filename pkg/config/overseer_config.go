@@ -15,8 +15,10 @@ type OverseerConfiguration struct {
 	// Setup represents the setup type, options include default (bare-metal), docker (docker run), docker-compose (akk-stack)
 	Setup string
 	// If setup is docker, this is the network to use, defaults to eqemu
-	DockerNetwork string
-	Expansion     string
+	DockerNetwork    string
+	Expansion        string
+	PortableDatabase int
+	AutoUpdate       int
 }
 
 // LoadOverseerConfig loads an overseer config file
@@ -57,6 +59,11 @@ func LoadOverseerConfig(path string) (*OverseerConfiguration, error) {
 				if err != nil {
 					return nil, fmt.Errorf("parse zone_count: %w", err)
 				}
+			case "auto_update":
+				config.AutoUpdate, err = strconv.Atoi(value)
+				if err != nil {
+					config.AutoUpdate = 0
+				}
 			case "setup":
 				config.Setup = strings.ToLower(value)
 			case "docker_network":
@@ -80,6 +87,11 @@ func LoadOverseerConfig(path string) (*OverseerConfiguration, error) {
 					value = ""
 				}
 				config.Expansion = value
+			case "portable_database":
+				config.PortableDatabase, err = strconv.Atoi(value)
+				if err != nil {
+					config.PortableDatabase = 0
+				}
 			default:
 				return nil, fmt.Errorf("unknown key in overseer.ini: %s", key)
 			}
@@ -192,6 +204,12 @@ func (c *OverseerConfiguration) Save() error {
 		case "expansion":
 			out += fmt.Sprintf("%s = %s\n", key, c.Expansion)
 			tmpConfig.Expansion = "1"
+		case "portable_database":
+			out += fmt.Sprintf("%s = %d\n", key, c.PortableDatabase)
+			tmpConfig.PortableDatabase = 1
+		case "auto_update":
+			out += fmt.Sprintf("%s = %d\n", key, c.AutoUpdate)
+			tmpConfig.AutoUpdate = 1
 		}
 		line = fmt.Sprintf("%s = %s", key, value)
 		out += line + "\n"
@@ -212,8 +230,15 @@ func (c *OverseerConfiguration) Save() error {
 	if tmpConfig.DockerNetwork == "" {
 		out += fmt.Sprintf("docker_network = %s\n", c.DockerNetwork)
 	}
+
 	if tmpConfig.Expansion == "" {
 		out += fmt.Sprintf("expansion = %s\n", c.Expansion)
+	}
+	if tmpConfig.PortableDatabase == 0 {
+		out += fmt.Sprintf("portable_database = %d\n", c.PortableDatabase)
+	}
+	if tmpConfig.AutoUpdate == 0 {
+		out += fmt.Sprintf("auto_update = %d\n", c.AutoUpdate)
 	}
 
 	err = os.WriteFile("overseer.ini", []byte(out), 0644)
