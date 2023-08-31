@@ -23,7 +23,17 @@ func main() {
 	err := run()
 	if err != nil {
 		message.Badf("Install failed: %s\n", err)
+
+		if runtime.GOOS == "windows" {
+			fmt.Println("Press any key to continue...")
+			fmt.Scanln()
+		}
 		os.Exit(1)
+	}
+
+	if runtime.GOOS == "windows" {
+		fmt.Println("Press any key to continue...")
+		fmt.Scanln()
 	}
 }
 
@@ -75,7 +85,6 @@ func run() error {
 
 	seconds := fmt.Sprintf("%.2f", time.Since(start).Seconds())
 	message.OK("Successfully installed in " + seconds + " seconds")
-
 	return nil
 }
 

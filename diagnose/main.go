@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/xackery/overseer/diagnose/check"
 	"github.com/xackery/overseer/pkg/config"
@@ -47,6 +48,11 @@ func run() error {
 	}
 
 	message.OK("Completed diagnose")
+
+	if runtime.GOOS == "windows" {
+		fmt.Println("Press any key to continue...")
+		fmt.Scanln()
+	}
 
 	return nil
 }

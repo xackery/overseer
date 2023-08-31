@@ -52,8 +52,14 @@ func LoadOverseerConfig(path string) (*OverseerConfiguration, error) {
 			switch key {
 			case "bin_path":
 				config.BinPath = value
+				if config.BinPath == "" {
+					config.BinPath = "bin"
+				}
 			case "server_path":
 				config.ServerPath = value
+				if config.ServerPath == "" {
+					config.ServerPath = "server"
+				}
 			case "zone_count":
 				config.ZoneCount, err = strconv.Atoi(value)
 				if err != nil {
