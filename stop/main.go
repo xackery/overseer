@@ -6,7 +6,9 @@ import (
 	"os/exec"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/xackery/overseer/pkg/config"
 	"github.com/xackery/overseer/pkg/message"
+	"github.com/xackery/overseer/pkg/sanity"
 )
 
 var (
@@ -16,44 +18,34 @@ var (
 func main() {
 	err := run()
 	if err != nil {
-		badf("Bootstrap failed: %s", err)
+		badf("Stop failed: %s", err)
 		os.Exit(1)
 	}
 }
 
 func run() error {
-	message.Banner("Bootstrap v" + Version)
-	fmt.Println("This program bootstraps eqemu, doing quick sanity checks, downloading and upgrading binaries, then running overseer")
-	type fileEntry struct {
-		name string
-		path string
+	config, err := config.LoadOverseerConfig("overseer.ini")
+	if err != nil {
+		return fmt.Errorf("load overseer config: %w", err)
 	}
-	files := []fileEntry{
-		{name: "overseer", path: "overseer"},
-		{name: "config.yaml", path: "config.yaml"},
-		{name: "zone", path: "zone"},
-		{name: "world", path: "world"},
-		{name: "ucs", path: "ucs"},
-		{name: "loginserver", path: "loginserver"},
-		{name: "queryserv", path: "queryserv"},
-	}
-	for _, file := range files {
-		fi, err := os.Stat(file.path)
-		if err != nil {
-			return fmt.Errorf("%s not found", file.name)
-		}
-		if fi.IsDir() {
-			return fmt.Errorf("%s is a directory", file.name)
-		}
+	message.Banner("Stop v" + Version)
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("getwd: %w", err)
 	}
 
-	goodf("Success")
+	fmt.Printf("Working directory: %s\n", cwd)
+
+	err = sanity.EssentialFiles(config)
+	if err != nil {
+		return fmt.Errorf("essential files: %w", err)
+	}
 
 	cmd := exec.Command("./overseer")
 	cmd.Dir = "."
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		return fmt.Errorf("overseer run: %w", err)
 	}

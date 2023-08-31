@@ -38,7 +38,20 @@ test:
 	@go test ./...
 
 # build all supported os's
-build-all: build-overseer-darwin build-overseer-windows build-overseer-linux build-diagnose-darwin build-diagnose-windows build-diagnose-linux build-bootstrap-darwin build-bootstrap-windows build-bootstrap-linux
+build-all:
+	-rm bin/overseer-*.zip
+	make build-all-overseer
+	make build-all-diagnose
+	make build-all-start
+	make build-all-stop
+	make build-all-install
+	make build-all-update
+	make build-all-verify
+
+build-all-%:
+	make build-$*-darwin
+	make build-$*-windows 
+	make build-$*-linux
 
 build-%-darwin:
 	@echo "build-$*-darwin: ${VERSION}"

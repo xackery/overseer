@@ -23,7 +23,7 @@ func eqemuConfig() error {
 	}
 	defer r.Close()
 
-	config, err := config.Load("eqemu_config.json")
+	config, err := config.LoadEQEmuConfig("eqemu_config.json")
 	if err != nil {
 		return fmt.Errorf("load: %w", err)
 	}

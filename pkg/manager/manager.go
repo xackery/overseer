@@ -2,9 +2,13 @@ package manager
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
+	"github.com/xackery/overseer/pkg/message"
 	"github.com/xackery/overseer/pkg/reporter"
 	"github.com/xackery/overseer/pkg/runner"
 	"github.com/xackery/overseer/pkg/signal"
@@ -26,14 +30,57 @@ type manager struct {
 	outChan       chan string
 }
 
+type SetupType int
+
+const (
+	SetupDefault SetupType = iota
+	SetupDocker
+)
+
 func (e *manager) setState(state reporter.AppState) {
 	e.state = state
 	reporter.SetAppState(e.displayName, state)
 }
 
 // Manage is the main loop for the zone.
-func Manage(displayName string, exeName string, args ...string) {
+func Manage(setup SetupType, displayName string, exeName string, args ...string) {
 	go poll(displayName, exeName, args...)
+}
+
+func InitializeDockerNetwork(networkName string) error {
+	if networkName == "" {
+		return fmt.Errorf("network is empty")
+	}
+	if networkName == "bridge" || networkName == "host" || networkName == "none" {
+		return fmt.Errorf("network is set to %s (invalid)", networkName)
+	}
+
+	ctx := context.Background()
+
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return fmt.Errorf("new env client: %w", err)
+	}
+
+	networks, err := cli.NetworkList(ctx, types.NetworkListOptions{})
+	if err != nil {
+		return fmt.Errorf("network list: %w", err)
+	}
+
+	for _, network := range networks {
+		if network.Name == networkName {
+			return nil
+		}
+	}
+
+	_, err = cli.NetworkCreate(ctx, networkName, types.NetworkCreate{})
+	if err != nil {
+		return fmt.Errorf("network create: %w", err)
+	}
+
+	message.OKf("Created docker network %s\n", networkName)
+
+	return nil
 }
 
 func poll(displayName string, exeName string, args ...string) {
@@ -50,7 +97,7 @@ func poll(displayName string, exeName string, args ...string) {
 		doneChan:    make(chan error),
 	}
 
-	run := runner.New(mgr.outChan, mgr.doneChan, mgr.exeName, mgr.args...)
+	run := runner.NewProcess(mgr.outChan, mgr.doneChan, mgr.exeName, mgr.args...)
 	for {
 		select {
 		case <-mgr.ctx.Done():

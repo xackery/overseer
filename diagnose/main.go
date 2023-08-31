@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/xackery/overseer/diagnose/check"
+	"github.com/xackery/overseer/pkg/config"
 	"github.com/xackery/overseer/pkg/message"
 )
 
@@ -20,13 +22,31 @@ func main() {
 }
 
 func run() error {
+	var err error
+	config, err := config.LoadOverseerConfig("overseer.ini")
+	if err != nil {
+		return fmt.Errorf("load overseer config: %w", err)
+	}
+
 	message.Banner("Diagnose v" + Version)
-	fmt.Println("This program diagnoses eqemu's configuration, looking for things that may be wrong")
-	err := eqemuConfig()
+
+	err = check.OverseerConfig()
+	if err != nil {
+		return fmt.Errorf("overseer.ini %w", err)
+	}
+
+	//fmt.Println("This program diagnoses eqemu's configuration, looking for things that may be wrong")
+	err = check.EqemuConfig()
 	if err != nil {
 		return fmt.Errorf("eqemu_config.json %w", err)
 	}
-	message.OK("Success")
+
+	err = check.Paths(config)
+	if err != nil {
+		return fmt.Errorf("paths %w", err)
+	}
+
+	message.OK("Completed diagnose")
 
 	return nil
 }

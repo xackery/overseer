@@ -68,7 +68,7 @@ func (e Dashboard) View() string {
 	case <-signal.Ctx().Done():
 		doc.WriteString(titleStyle.Width(titleWidth).Render("Shutting down..."))
 	default:
-		doc.WriteString(titleStyle.Width(titleWidth).Render("Manager v" + e.version))
+		doc.WriteString(titleStyle.Width(titleWidth).Render("Overseer v" + e.version))
 	}
 	doc.WriteString("\n\n")
 	height += 2

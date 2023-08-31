@@ -6,8 +6,8 @@ import (
 	"os"
 )
 
-// Load loads a configuration file
-func Load(path string) (*Configuration, error) {
+// LoadEQEmuConfig loads a configuration file
+func LoadEQEmuConfig(path string) (*Configuration, error) {
 	r, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("open: %w", err)

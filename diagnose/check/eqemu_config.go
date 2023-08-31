@@ -1,4 +1,4 @@
-package main
+package check
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/xackery/overseer/pkg/message"
 )
 
-func eqemuConfig() error {
+func EqemuConfig() error {
 	fi, err := os.Stat("eqemu_config.json")
 	if err != nil {
 		return fmt.Errorf("not found")
@@ -23,7 +23,7 @@ func eqemuConfig() error {
 	}
 	defer r.Close()
 
-	config, err := config.Load("eqemu_config.json")
+	config, err := config.LoadEQEmuConfig("eqemu_config.json")
 	if err != nil {
 		return fmt.Errorf("load: %w", err)
 	}

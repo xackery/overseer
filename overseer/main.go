@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"time"
 
-	"gopkg.in/yaml.v3"
-
+	"github.com/xackery/overseer/pkg/config"
+	"github.com/xackery/overseer/pkg/message"
 	"github.com/xackery/overseer/pkg/signal"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -16,28 +17,35 @@ import (
 )
 
 var (
-	Version = "0.0.0"
+	Version       = "0.0.0"
+	isInitialized = false
 )
 
 func main() {
 	start := time.Now()
 	err := run()
-	// clear the screen on exit
-	fmt.Print("\033[H\033[2J")
+	if isInitialized {
+		fmt.Print("\033[H\033[2J") // clear screen
+	}
 	if err != nil {
-		fmt.Println("Overseer failed:", err)
+		message.Badf("Overseer failed: %s", err)
 		os.Exit(1)
 	}
-	fmt.Printf("Overseer exited after %0.2f seconds\n", time.Since(start).Seconds())
+	message.OKf("Overseer exited after %0.2f seconds\n", time.Since(start).Seconds())
 }
 
 func run() error {
-
-	err := parseManager()
+	config, err := config.LoadOverseerConfig("overseer.ini")
 	if err != nil {
-		return err
+		return fmt.Errorf("load overseer config: %w", err)
 	}
 
+	err = parseManager(config)
+	if err != nil {
+		return fmt.Errorf("initialize manager: %w", err)
+	}
+
+	isInitialized = true
 	p := tea.NewProgram(dashboard.New(Version))
 	go func() {
 		for {
@@ -61,95 +69,35 @@ func run() error {
 	return nil
 }
 
-func parseManager() error {
-
-	r, err := os.Open("config.yaml")
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	type yamlConfig struct {
-		World struct {
-			IsLocked   bool   `yaml:"is_locked"`
-			ShortName  string `yaml:"short_name"`
-			LongName   string `yaml:"long_name"`
-			WanAddress string `yaml:"wan_address"`
-			LanAddress string `yaml:"lan_address"`
-
-			MaxClients      int    `yaml:"max_clients"`
-			IntranetIP      string `yaml:"intranet_ip"`
-			IntranetPort    int    `yaml:"intranet_port"`
-			TelnetIsEnabled bool   `yaml:"telnet_is_enabled"`
-			TelnetIP        string `yaml:"telnet_ip"`
-			TelnetPort      int    `yaml:"telnet_port"`
-			SharedKey       string `yaml:"shared_key"`
-		} `yaml:"world"`
-		Ucs struct {
-			Host string `yaml:"host"`
-			Port int    `yaml:"port"`
-		} `yaml:"ucs"`
-		Database struct {
-			DB       string `yaml:"db"`
-			Host     string `yaml:"host"`
-			Port     int    `yaml:"port"`
-			Username string `yaml:"username"`
-			Password string `yaml:"password"`
-		} `yaml:"database"`
-		QueryServ struct {
-			DB       string `yaml:"db"`
-			Host     string `yaml:"host"`
-			Port     int    `yaml:"port"`
-			Username string `yaml:"username"`
-			Password string `yaml:"password"`
-		} `yaml:"query_serv"`
-		Zone struct {
-			DefaultStatus int `yaml:"default_status"`
-			PortMin       int `yaml:"port_min"`
-			PortMax       int `yaml:"port_max"`
-			MaxZones      int `yaml:"max_zones"`
-		} `yaml:"zone"`
-		LoginServer []struct {
-			Port     int    `yaml:"port"`
-			Account  string `yaml:"account"`
-			Password string `yaml:"password"`
-			Host     string `yaml:"host"`
-			Type     int    `yaml:"type"`
-		} `yaml:"login_server"`
-		Dir struct {
-			Patches      string `yaml:"patches"`
-			Opcodes      string `yaml:"opcodes"`
-			SharedMemory string `yaml:"shared_memory"`
-			LuaModules   string `yaml:"lua_modules"`
-			Quests       string `yaml:"quests"`
-			Plugins      string `yaml:"plugins"`
-			Maps         string `yaml:"maps"`
-			Logs         string `yaml:"logs"`
-		} `yaml:"dir"`
-		Other map[string]string `yaml:"other"`
-	}
-	config := yamlConfig{}
-	dec := yaml.NewDecoder(r)
-	err = dec.Decode(&config)
-	if err != nil {
-		return fmt.Errorf("decode config.yaml: %w", err)
+func parseManager(config *config.OverseerConfiguration) error {
+	var err error
+	winExt := ".exe"
+	if runtime.GOOS != "windows" {
+		winExt = ""
 	}
 
-	zoneCount := 0
-	for i := config.Zone.PortMin; i < config.Zone.PortMax; i++ {
-		zoneCount++
-		if zoneCount > config.Zone.MaxZones {
-			break
+	setupType := manager.SetupDefault
+	switch config.Setup {
+	case "docker":
+		setupType = manager.SetupDocker
+		err = manager.InitializeDockerNetwork(config.DockerNetwork)
+		if err != nil {
+			return fmt.Errorf("initialize docker network: %w", err)
 		}
-		manager.Manage(fmt.Sprintf("zone%d", i), "./zone", fmt.Sprintf("%d", i))
+	case "default":
+		setupType = manager.SetupDefault
 	}
 
-	manager.Manage("world", "./world")
-	manager.Manage("ucs", "./ucs")
-	manager.Manage("queryserv", "./queryserv")
-	manager.Manage("loginserver", "./loginserver")
-	for k, v := range config.Other {
-		manager.Manage(k, v)
+	for i := 0; i < config.ZoneCount; i++ {
+		manager.Manage(setupType, fmt.Sprintf("zone%d", i), "zone"+winExt, fmt.Sprintf("%d", i))
 	}
+
+	manager.Manage(setupType, "world", "world"+winExt)
+	manager.Manage(setupType, "ucs", "ucs"+winExt)
+	manager.Manage(setupType, "queryserv", "queryserv"+winExt)
+	manager.Manage(setupType, "loginserver", "loginserver"+winExt)
+	//for k, v := range config.Other {
+	//	manager.Manage(k, v)
+	//}
 	return nil
 }
