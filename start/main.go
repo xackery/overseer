@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"time"
 
 	"github.com/erikgeiser/promptkit/selection"
 	"github.com/xackery/overseer/pkg/config"
@@ -24,6 +25,7 @@ func main() {
 		message.Badf("Start failed: %s\n", err)
 		operation.Exit(1)
 	}
+	operation.Exit(0)
 }
 
 func run() error {
@@ -55,30 +57,36 @@ func run() error {
 	} else {
 		path, err = selection.New("Start which program?", []string{
 			"overseer (all)",
-			"shared",
+			"shared_memory",
 			"world",
 			"zone",
+			"queryserv",
+			"ucs",
+			"loginserver",
 		}).RunPrompt()
 		if err != nil {
 			return fmt.Errorf("start: %w", err)
 		}
 	}
 
+	choice := path
+	dir := cfg.ServerPath
 	switch path {
 	case "overseer (all)":
 		path = "overseer" + winExt
-	case "shared":
-		path = cfg.BinPath + "/shared" + winExt
+		dir = "."
+	case "shared_memory":
+		path = cwd + "/" + cfg.BinPath + "/shared_memory" + winExt
 	case "world":
-		path = cfg.BinPath + "/world" + winExt
+		path = cwd + "/" + cfg.BinPath + "/world" + winExt
 	case "zone":
-		path = cfg.BinPath + "/zone" + winExt
+		path = cwd + "/" + cfg.BinPath + "/zone" + winExt
 	case "queryserv":
-		path = cfg.BinPath + "/queryserv" + winExt
+		path = cwd + "/" + cfg.BinPath + "/queryserv" + winExt
 	case "ucs":
-		path = cfg.BinPath + "/ucs" + winExt
+		path = cwd + "/" + cfg.BinPath + "/ucs" + winExt
 	case "loginserver":
-		path = cfg.BinPath + "/loginserver" + winExt
+		path = cwd + "/" + cfg.BinPath + "/loginserver" + winExt
 	default:
 		return fmt.Errorf("unknown argument %s", path)
 	}
@@ -99,13 +107,16 @@ func run() error {
 		}
 	}
 
+	start := time.Now()
 	cmd := exec.Command(path)
-	cmd.Dir = "."
+	cmd.Dir = dir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
+	message.OKf("%s exited after %0.2f seconds\n", choice, time.Since(start).Seconds())
 	if err != nil {
 		return fmt.Errorf("%s run: %w", path, err)
 	}
+
 	return nil
 }
