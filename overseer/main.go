@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"runtime"
 	"time"
 
 	"github.com/xackery/overseer/pkg/config"
 	"github.com/xackery/overseer/pkg/message"
+	"github.com/xackery/overseer/pkg/operation"
 	"github.com/xackery/overseer/pkg/signal"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -30,7 +30,7 @@ func main() {
 	}
 	if err != nil {
 		message.Badf("Overseer failed: %s\n", err)
-		os.Exit(1)
+		operation.Exit(1)
 	}
 	message.OKf("Overseer exited after %0.2f seconds\n", time.Since(start).Seconds())
 }

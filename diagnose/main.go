@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"runtime"
 
 	"github.com/xackery/overseer/diagnose/check"
 	"github.com/xackery/overseer/pkg/config"
 	"github.com/xackery/overseer/pkg/message"
+	"github.com/xackery/overseer/pkg/operation"
 )
 
 var (
@@ -19,13 +19,13 @@ func main() {
 	err := run()
 	if err != nil {
 		message.Badf("Diagnostics failed: %s\n", err)
-		os.Exit(1)
+		operation.Exit(1)
 	}
 }
 
 func run() error {
 	var err error
-	config, err := config.LoadOverseerConfig("overseer.ini")
+	cfg, err := config.LoadOverseerConfig("overseer.ini")
 	if err != nil {
 		return fmt.Errorf("load overseer config: %w", err)
 	}
@@ -38,12 +38,17 @@ func run() error {
 	}
 
 	//fmt.Println("This program diagnoses eqemu's configuration, looking for things that may be wrong")
-	err = check.EqemuConfig(config)
+	err = check.EqemuConfig(cfg)
 	if err != nil {
-		return fmt.Errorf("parse %s: %w", config.ServerPath+"/eqemu_config.json", err)
+		return fmt.Errorf("parse %s: %w", cfg.ServerPath+"/eqemu_config.json", err)
 	}
 
-	err = check.Paths(config)
+	emuCfg, err := config.LoadEQEmuConfig(cfg.ServerPath + "/eqemu_config.json")
+	if err != nil {
+		return fmt.Errorf("load eqemu config: %w", err)
+	}
+
+	err = check.Paths(cfg, emuCfg)
 	if err != nil {
 		return fmt.Errorf("paths %w", err)
 	}

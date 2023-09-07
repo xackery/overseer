@@ -7,6 +7,7 @@ import (
 
 	"github.com/xackery/overseer/pkg/config"
 	"github.com/xackery/overseer/pkg/message"
+	"github.com/xackery/overseer/pkg/operation"
 	"github.com/xackery/overseer/pkg/sanity"
 )
 
@@ -19,7 +20,7 @@ func main() {
 	err := run()
 	if err != nil {
 		message.Badf("Stop failed: %s\n", err)
-		os.Exit(1)
+		operation.Exit(1)
 	}
 }
 

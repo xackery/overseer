@@ -3,8 +3,9 @@ package main
 import (
 	"fmt"
 	"math/rand"
-	"os"
 	"time"
+
+	"github.com/xackery/overseer/pkg/operation"
 )
 
 func main() {
@@ -22,7 +23,7 @@ func main() {
 			// 50% chance with an error
 			if rand.Intn(2) == 0 {
 				fmt.Println("/src/zone/main.cpp:1:1 [Error] Something went wrong")
-				os.Exit(1)
+				operation.Exit(1)
 			}
 
 			fmt.Println("Exiting")

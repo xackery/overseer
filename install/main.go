@@ -11,6 +11,7 @@ import (
 	"github.com/xackery/overseer/pkg/config"
 	"github.com/xackery/overseer/pkg/download"
 	"github.com/xackery/overseer/pkg/message"
+	"github.com/xackery/overseer/pkg/operation"
 	"github.com/xackery/overseer/pkg/zip"
 )
 
@@ -28,7 +29,7 @@ func main() {
 			fmt.Println("Press any key to continue...")
 			fmt.Scanln()
 		}
-		os.Exit(1)
+		operation.Exit(1)
 	}
 
 	if runtime.GOOS == "windows" {

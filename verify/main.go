@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/xackery/overseer/pkg/config"
 	"github.com/xackery/overseer/pkg/message"
+	"github.com/xackery/overseer/pkg/operation"
 )
 
 var (
@@ -17,7 +17,7 @@ func main() {
 	err := run()
 	if err != nil {
 		message.Badf("Verification failed: %s\n", err)
-		os.Exit(1)
+		operation.Exit(1)
 	}
 }
 
