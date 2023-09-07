@@ -12,7 +12,7 @@ import (
 )
 
 func OverseerConfig() error {
-	fi, err := os.Stat("eqemu_config.json")
+	fi, err := os.Stat("overseer.ini")
 	if err != nil {
 		return fmt.Errorf("not found")
 	}

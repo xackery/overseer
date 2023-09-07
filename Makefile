@@ -20,12 +20,21 @@ build-mock:
 	@mkdir -p bin
 	go build -o bin/mock mock/mock.go
 
+docker-sim:
+	@echo "docker-sim: running simulator of debian"
+	docker run --rm -it -v ${PWD}/bin:/eqemu debian:stable-slim bash
 
 run-test: build
 	@echo "run-test: running..."
 	cp bin/${NAME} ../server/build/bin/${NAME}
 	cd ../server/build/bin && ./${NAME}
 	
+deq-%:
+	@echo "deq-$*: running..."
+	@cd $* && GOOS=linux GOARCH=amd64 go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -s -w" -o ../bin/$*
+	scp bin/$* deq@deq:/eqemu/
+	ssh -t deq@deq "cd /eqemu && ./$*"
+
 # bundle program with windows icon
 bundle:
 	@echo "if go-winres is not found, run go install github.com/tc-hib/go-winres@latest"

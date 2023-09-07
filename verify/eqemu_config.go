@@ -8,8 +8,8 @@ import (
 	"github.com/xackery/overseer/pkg/message"
 )
 
-func eqemuConfig() error {
-	fi, err := os.Stat("eqemu_config.json")
+func eqemuConfig(cfg *config.OverseerConfiguration) error {
+	fi, err := os.Stat(cfg.ServerPath + "/eqemu_config.json")
 	if err != nil {
 		return fmt.Errorf("not found")
 	}
@@ -17,13 +17,13 @@ func eqemuConfig() error {
 		return fmt.Errorf("is a directory")
 	}
 
-	r, err := os.Open("eqemu_config.json")
+	r, err := os.Open(cfg.ServerPath + "/eqemu_config.json")
 	if err != nil {
 		return err
 	}
 	defer r.Close()
 
-	config, err := config.LoadEQEmuConfig("eqemu_config.json")
+	config, err := config.LoadEQEmuConfig(cfg.ServerPath + "/eqemu_config.json")
 	if err != nil {
 		return fmt.Errorf("load: %w", err)
 	}
@@ -32,6 +32,6 @@ func eqemuConfig() error {
 		return fmt.Errorf("database.db is empty")
 	}
 
-	message.OK("eqemu_config.json found")
+	message.OK(cfg.ServerPath + "/eqemu_config.json found")
 	return nil
 }

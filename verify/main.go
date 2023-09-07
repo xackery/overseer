@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/xackery/overseer/pkg/config"
 	"github.com/xackery/overseer/pkg/message"
 )
 
@@ -21,9 +22,15 @@ func main() {
 }
 
 func run() error {
+	config, err := config.LoadOverseerConfig("overseer.ini")
+	if err != nil {
+		return fmt.Errorf("load overseer config: %w", err)
+	}
+
 	message.Banner("Verify v" + Version)
+
 	fmt.Println("This program verifies eqemu as it runs, looking for things that may be wrong")
-	err := eqemuConfig()
+	err = eqemuConfig(config)
 	if err != nil {
 		return fmt.Errorf("eqemu_config.json %w", err)
 	}

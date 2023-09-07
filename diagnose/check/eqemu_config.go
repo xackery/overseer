@@ -8,8 +8,9 @@ import (
 	"github.com/xackery/overseer/pkg/message"
 )
 
-func EqemuConfig() error {
-	fi, err := os.Stat("eqemu_config.json")
+func EqemuConfig(cfg *config.OverseerConfiguration) error {
+
+	fi, err := os.Stat(cfg.ServerPath + "/eqemu_config.json")
 	if err != nil {
 		return fmt.Errorf("not found")
 	}
@@ -17,13 +18,13 @@ func EqemuConfig() error {
 		return fmt.Errorf("is a directory")
 	}
 
-	r, err := os.Open("eqemu_config.json")
+	r, err := os.Open(cfg.ServerPath + "/eqemu_config.json")
 	if err != nil {
 		return err
 	}
 	defer r.Close()
 
-	config, err := config.LoadEQEmuConfig("eqemu_config.json")
+	config, err := config.LoadEQEmuConfig(cfg.ServerPath + "/eqemu_config.json")
 	if err != nil {
 		return fmt.Errorf("load: %w", err)
 	}

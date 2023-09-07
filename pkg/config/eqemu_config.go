@@ -10,7 +10,7 @@ import (
 func LoadEQEmuConfig(path string) (*Configuration, error) {
 	r, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("open: %w", err)
+		return nil, err
 	}
 	defer r.Close()
 

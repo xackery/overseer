@@ -38,9 +38,9 @@ func run() error {
 	}
 
 	//fmt.Println("This program diagnoses eqemu's configuration, looking for things that may be wrong")
-	err = check.EqemuConfig()
+	err = check.EqemuConfig(config)
 	if err != nil {
-		return fmt.Errorf("eqemu_config.json %w", err)
+		return fmt.Errorf("parse %s: %w", config.ServerPath+"/eqemu_config.json", err)
 	}
 
 	err = check.Paths(config)

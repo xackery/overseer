@@ -62,8 +62,6 @@ func run() error {
 		return fmt.Errorf("install config setup: %w", err)
 	}
 
-	os.Exit(1)
-
 	start := time.Now()
 	err = downloadBinaries(config)
 	if err != nil {
