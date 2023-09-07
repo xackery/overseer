@@ -47,7 +47,7 @@ func LoadOverseerConfig(path string) (*OverseerConfiguration, error) {
 			if len(parts) != 2 {
 				continue
 			}
-			key := strings.TrimSpace(parts[0])
+			key := strings.ToLower(strings.TrimSpace(parts[0]))
 			value := strings.TrimSpace(parts[1])
 			switch key {
 			case "bin_path":
@@ -192,48 +192,81 @@ func (c *OverseerConfiguration) Save() error {
 		value := strings.TrimSpace(parts[1])
 		switch key {
 		case "bin_path":
+			if tmpConfig.BinPath == "1" {
+				continue
+			}
 			out += fmt.Sprintf("%s = %s\n", key, c.BinPath)
 			tmpConfig.BinPath = "1"
 			continue
 		case "server_path":
+			if tmpConfig.ServerPath == "1" {
+				continue
+			}
 			out += fmt.Sprintf("%s = %s\n", key, c.ServerPath)
 			tmpConfig.ServerPath = "1"
+			continue
 		case "zone_count":
+			if tmpConfig.ZoneCount == 1 {
+				continue
+			}
 			out += fmt.Sprintf("%s = %d\n", key, c.ZoneCount)
 			tmpConfig.ZoneCount = 1
+			continue
 		case "setup":
+			if tmpConfig.Setup == "1" {
+				continue
+			}
 			out += fmt.Sprintf("%s = %s\n", key, c.Setup)
 			tmpConfig.Setup = "1"
+			continue
 		case "docker_network":
+			if tmpConfig.DockerNetwork == "1" {
+				continue
+			}
 			out += fmt.Sprintf("%s = %s\n", key, c.DockerNetwork)
 			tmpConfig.DockerNetwork = "1"
+			continue
 		case "expansion":
+			if tmpConfig.Expansion == "1" {
+				continue
+			}
 			out += fmt.Sprintf("%s = %s\n", key, c.Expansion)
 			tmpConfig.Expansion = "1"
+			continue
 		case "portable_database":
+			if tmpConfig.PortableDatabase == 1 {
+				continue
+			}
+
 			out += fmt.Sprintf("%s = %d\n", key, c.PortableDatabase)
 			tmpConfig.PortableDatabase = 1
+			continue
 		case "auto_update":
+			if tmpConfig.AutoUpdate == 1 {
+				continue
+			}
+
 			out += fmt.Sprintf("%s = %d\n", key, c.AutoUpdate)
 			tmpConfig.AutoUpdate = 1
+			continue
 		}
 		line = fmt.Sprintf("%s = %s", key, value)
 		out += line + "\n"
 	}
 
-	if tmpConfig.BinPath == "" {
+	if tmpConfig.BinPath != "1" {
 		out += fmt.Sprintf("bin_path = %s\n", c.BinPath)
 	}
-	if tmpConfig.ServerPath == "" {
+	if tmpConfig.ServerPath != "1" {
 		out += fmt.Sprintf("server_path = %s\n", c.ServerPath)
 	}
-	if tmpConfig.ZoneCount == 0 {
+	if tmpConfig.ZoneCount != 1 {
 		out += fmt.Sprintf("zone_count = %d\n", c.ZoneCount)
 	}
-	if tmpConfig.Setup == "" {
+	if tmpConfig.Setup != "1" {
 		out += fmt.Sprintf("setup = %s\n", c.Setup)
 	}
-	if tmpConfig.DockerNetwork == "" {
+	if tmpConfig.DockerNetwork != "1" {
 		out += fmt.Sprintf("docker_network = %s\n", c.DockerNetwork)
 	}
 

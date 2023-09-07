@@ -5,10 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"time"
 
-	"github.com/erikgeiser/promptkit/selection"
+	"github.com/erikgeiser/promptkit/confirmation"
 	"github.com/xackery/overseer/pkg/config"
 	"github.com/xackery/overseer/pkg/download"
 	"github.com/xackery/overseer/pkg/message"
@@ -47,12 +46,12 @@ func run() error {
 	fmt.Println("This program installs eqemu, creating a usable environment from scratch")
 
 	if config.Expansion != "" {
-		choice, err := selection.New("It looks like install has been ran before. Would you like to reconfigure the install?", []string{"No", "Yes"}).RunPrompt()
+		choice, err := confirmation.New("It looks like install has been ran before. Would you like to reconfigure the install?", confirmation.No).RunPrompt()
 		if err != nil {
 			return fmt.Errorf("select reconfigure: %w", err)
 		}
-		if strings.Contains(strings.ToLower(choice), "yes") {
-			fmt.Println("OK, flushing config! You'll be prmopted new install options.")
+		if choice {
+			fmt.Println("OK, flushing config! You'll be prompted new install options.")
 			config.Expansion = ""
 			config.PortableDatabase = 0
 		}
@@ -62,6 +61,8 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("install config setup: %w", err)
 	}
+
+	os.Exit(1)
 
 	start := time.Now()
 	err = downloadBinaries(config)
@@ -199,11 +200,15 @@ func downloadPortableDatabase(config *config.OverseerConfiguration) error {
 		return fmt.Errorf("mkdir server/database: %w", err)
 	}
 
-	url := "https://archive.mariadb.org/mariadb-10.6.10/winx64-packages/mariadb-10.6.10-winx64.zip"
-	cachePath := "server/cache/mariadb-10.6.10-winx64.zip"
+	//url := "https://archive.mariadb.org/mariadb-10.6.10/winx64-packages/mariadb-10.6.10-winx64.zip"
+	url := "https://cdn.mysql.com//Downloads/MySQL-8.1/mysql-8.1.0-linux-glibc2.17-x86_64-minimal.tar.xz"
+	//cachePath := "server/cache/mariadb-10.6.10-winx64.zip"
+	cachePath := "server/cache/mysql-8.1.0-linux-glibc2.17-x86_64-minimal.tar.xz"
 	if runtime.GOOS != "windows" {
-		url = "https://archive.mariadb.org/mariadb-10.6.10/bintar-linux-systemd-x86_64/mariadb-10.6.10-linux-systemd-x86_64.tar.gz"
-		cachePath = "server/cache/mariadb-10.6.10-linux-systemd-x86_64.tar.gz"
+		//url = "https://archive.mariadb.org/mariadb-10.6.10/bintar-linux-systemd-x86_64/mariadb-10.6.10-linux-systemd-x86_64.tar.gz"
+		url = "https://cdn.mysql.com//Downloads/MySQL-8.1/mysql-8.1.0-winx64.zip"
+		//cachePath = "server/cache/mariadb-10.6.10-linux-systemd-x86_64.tar.gz"
+		cachePath = "server/cache/mysql-8.1.0-winx64.zip"
 	}
 
 	isCache, err := download.Save(url, cachePath)
@@ -220,7 +225,7 @@ func downloadPortableDatabase(config *config.OverseerConfiguration) error {
 		return fmt.Errorf("unpack %s: %w", filepath.Base(cachePath), err)
 	}
 
-	message.OK("Downloaded maps")
+	message.OK("Downloaded db")
 
 	return nil
 }

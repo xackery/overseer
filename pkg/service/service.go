@@ -13,3 +13,7 @@ func IsDatabaseUp() bool {
 	conn.Close()
 	return true
 }
+
+func DatabaseStart() error {
+	return nil
+}

@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/xackery/overseer/pkg/config"
 	"github.com/xackery/overseer/pkg/message"
 	"github.com/xackery/overseer/pkg/sanity"
@@ -19,7 +18,7 @@ var (
 func main() {
 	err := run()
 	if err != nil {
-		badf("Stop failed: %s", err)
+		message.Badf("Stop failed: %s\n", err)
 		os.Exit(1)
 	}
 }
@@ -51,18 +50,4 @@ func run() error {
 		return fmt.Errorf("overseer run: %w", err)
 	}
 	return nil
-}
-
-func goodf(format string, a ...interface{}) {
-	fmt.Printf(lipgloss.NewStyle().SetString("✅").
-		Foreground(lipgloss.AdaptiveColor{Light: "#43BF6D", Dark: "#73F59F"}).
-		PaddingRight(1).
-		String()+format+"\n", a...)
-}
-
-func badf(format string, a ...interface{}) {
-	fmt.Printf(lipgloss.NewStyle().SetString("❌").
-		Foreground(lipgloss.AdaptiveColor{Light: "#FF5555", Dark: "#FF5555"}).
-		PaddingRight(1).
-		String()+format+"\n", a...)
 }

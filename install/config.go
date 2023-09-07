@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/erikgeiser/promptkit/confirmation"
 	"github.com/erikgeiser/promptkit/selection"
 	"github.com/xackery/overseer/pkg/config"
 	"github.com/xackery/overseer/pkg/service"
@@ -39,20 +40,34 @@ func installConfigSetup(config *config.OverseerConfiguration) error {
 	}
 	config.Setup = strings.ToLower(choice)
 
-	dbOptions := []string{"Yes", "No"}
+	preChoice := confirmation.Yes
 	if service.IsDatabaseUp() {
 		fmt.Println("It looks like a MySQL server is already running")
-		dbOptions = []string{"No", "Yes"}
+		preChoice = confirmation.No
 	}
-	choice, err = selection.New("Would you like to install and use a portable database service?", dbOptions).RunPrompt()
+
+	isChoice, err := confirmation.New("Would you like to install and use a portable database service?", preChoice).RunPrompt()
 	if err != nil {
 		return fmt.Errorf("select portable database: %w", err)
 	}
-	if strings.Contains(strings.ToLower(choice), "yes") {
+	if isChoice {
 		config.PortableDatabase = 1
 	} else {
 		config.PortableDatabase = 0
 	}
+
+	isChoice, err = confirmation.New("Do you want to auto update everything on start run?", confirmation.No).RunPrompt()
+	if err != nil {
+		return fmt.Errorf("select auto update: %w", err)
+	}
+	if isChoice {
+		config.AutoUpdate = 1
+	} else {
+		config.AutoUpdate = 0
+	}
+
+	config.BinPath = "bin"
+	config.ServerPath = "server"
 
 	err = config.Save()
 	if err != nil {

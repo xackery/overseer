@@ -5,10 +5,10 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/xackery/overseer/pkg/config"
 	"github.com/xackery/overseer/pkg/message"
 	"github.com/xackery/overseer/pkg/sanity"
+	"github.com/xackery/overseer/pkg/service"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 func main() {
 	err := run()
 	if err != nil {
-		badf("Start failed: %s", err)
+		message.Badf("Start failed: %s\n", err)
 		os.Exit(1)
 	}
 }
@@ -41,6 +41,22 @@ func run() error {
 		return fmt.Errorf("essential files: %w", err)
 	}
 
+	if !service.IsDatabaseUp() {
+		if config.PortableDatabase != 1 {
+			message.Bad("Database is not running and we aren't portable. Please run it first.")
+			return fmt.Errorf("database not running")
+		}
+		err = service.DatabaseStart()
+		if err != nil {
+			return fmt.Errorf("database start: %w", err)
+		}
+
+		if !service.IsDatabaseUp() {
+			message.Bad("Database is not running even after trying to start it.")
+			return fmt.Errorf("database failed to start")
+		}
+	}
+
 	cmd := exec.Command("./overseer")
 	cmd.Dir = "."
 	cmd.Stdout = os.Stdout
@@ -50,18 +66,4 @@ func run() error {
 		return fmt.Errorf("overseer run: %w", err)
 	}
 	return nil
-}
-
-func goodf(format string, a ...interface{}) {
-	fmt.Printf(lipgloss.NewStyle().SetString("✅").
-		Foreground(lipgloss.AdaptiveColor{Light: "#43BF6D", Dark: "#73F59F"}).
-		PaddingRight(1).
-		String()+format+"\n", a...)
-}
-
-func badf(format string, a ...interface{}) {
-	fmt.Printf(lipgloss.NewStyle().SetString("❌").
-		Foreground(lipgloss.AdaptiveColor{Light: "#FF5555", Dark: "#FF5555"}).
-		PaddingRight(1).
-		String()+format+"\n", a...)
 }

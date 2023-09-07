@@ -29,7 +29,7 @@ func main() {
 		fmt.Print("\033[H\033[2J") // clear screen
 	}
 	if err != nil {
-		message.Badf("Overseer failed: %s", err)
+		message.Badf("Overseer failed: %s\n", err)
 		os.Exit(1)
 	}
 	message.OKf("Overseer exited after %0.2f seconds\n", time.Since(start).Seconds())
