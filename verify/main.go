@@ -6,6 +6,7 @@ import (
 	"github.com/xackery/overseer/pkg/config"
 	"github.com/xackery/overseer/pkg/message"
 	"github.com/xackery/overseer/pkg/operation"
+	"github.com/xackery/overseer/verify/confirm"
 )
 
 var (
@@ -22,7 +23,7 @@ func main() {
 }
 
 func run() error {
-	config, err := config.LoadOverseerConfig("overseer.ini")
+	cfg, err := config.LoadOverseerConfig("overseer.ini")
 	if err != nil {
 		return fmt.Errorf("load overseer config: %w", err)
 	}
@@ -30,9 +31,19 @@ func run() error {
 	message.Banner("Verify v" + Version)
 
 	fmt.Println("This program verifies eqemu as it runs, looking for things that may be wrong")
-	err = eqemuConfig(config)
+	err = eqemuConfig(cfg)
 	if err != nil {
 		return fmt.Errorf("eqemu_config.json %w", err)
+	}
+
+	emuCfg, err := config.LoadEQEmuConfig(cfg.ServerPath + "/eqemu_config.json")
+	if err != nil {
+		return fmt.Errorf("load eqemu config: %w", err)
+	}
+
+	err = confirm.DBConnects(cfg, emuCfg)
+	if err != nil {
+		return fmt.Errorf("db: %w", err)
 	}
 	message.OK("Success")
 
