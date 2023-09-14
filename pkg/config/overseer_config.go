@@ -19,6 +19,7 @@ type OverseerConfiguration struct {
 	Expansion        string
 	PortableDatabase int
 	AutoUpdate       int
+	Apps             []string
 }
 
 // LoadOverseerConfig loads an overseer config file
@@ -98,6 +99,8 @@ func LoadOverseerConfig(path string) (*OverseerConfiguration, error) {
 				if err != nil {
 					config.PortableDatabase = 0
 				}
+			case "app":
+				config.Apps = append(config.Apps, value)
 			default:
 				return nil, fmt.Errorf("unknown key in overseer.ini: %s", key)
 			}

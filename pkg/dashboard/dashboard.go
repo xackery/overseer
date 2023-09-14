@@ -7,13 +7,15 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/xackery/overseer/pkg/flog"
 	"github.com/xackery/overseer/pkg/reporter"
 	"github.com/xackery/overseer/pkg/signal"
 	"golang.org/x/term"
 )
 
 type Dashboard struct {
-	version string
+	version       string
+	stateOrdering []string
 }
 
 // RefreshRequest is a message that tells the program to refresh the dashboard.
@@ -25,12 +27,45 @@ func (r RefreshRequest) String() string {
 }
 
 func New(version string) Dashboard {
-	return Dashboard{
+	e := Dashboard{
 		version: version,
 	}
+	state := reporter.AppStates()
+	e.stateOrdering = []string{}
+	builtinApps := []string{
+		"world",
+		"ucs",
+		"zone",
+	}
+
+	for _, builtin := range builtinApps {
+		if builtin == "zone" {
+			continue
+		}
+		e.stateOrdering = append(e.stateOrdering, builtin)
+	}
+
+	flog.Printf("Number of services tracked: %d\n", len(e.stateOrdering))
+
+	for appName := range state.States {
+		isFound := false
+		for _, builtinApp := range builtinApps {
+			if !strings.HasPrefix(appName, builtinApp) {
+				continue
+			}
+			isFound = true
+			break
+
+		}
+		if !isFound {
+			e.stateOrdering = append(e.stateOrdering, appName)
+		}
+	}
+	return e
 }
 
 func (e Dashboard) Init() tea.Cmd {
+
 	// Just return `nil`, which means "no I/O right now, please."
 	return nil
 }
@@ -43,6 +78,7 @@ func (e Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		// These keys should exit the program.
 		case "ctrl+c", "q":
+			flog.Println("Received ctrl+c or q, exiting")
 			signal.Cancel()
 			signal.WaitWorker()
 			return e, tea.Quit
@@ -75,18 +111,20 @@ func (e Dashboard) View() string {
 
 	state := reporter.AppStates()
 
+	renderStates := []string{
+		listHeader("Services"),
+	}
+	for _, order := range e.stateOrdering {
+		renderStates = append(renderStates, renderState(state.States[order], order))
+	}
+
 	//colHeight := physicalHeight - height - 2
 	doc.WriteString(lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		list.Render(
 			lipgloss.JoinVertical(
 				lipgloss.Left,
-				listHeader("Services"),
-				renderState(state.States["loginserver"], "LoginServer"),
-				renderState(state.States["world"], "World"),
-				renderState(state.States["ucs"], "UCS"),
-				renderState(state.States["queryserv"], "QueryServ"),
-				renderState(state.States["talkeq"], "TalkEQ"),
+				renderStates...,
 			),
 		),
 		list.Copy().Width(16).Render(

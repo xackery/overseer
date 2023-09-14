@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/xackery/overseer/pkg/message"
 	"github.com/xackery/overseer/pkg/operation"
 	"github.com/xackery/overseer/pkg/sanity"
-	"github.com/xackery/overseer/pkg/service"
 )
 
 var (
@@ -51,47 +51,76 @@ func run() error {
 		return fmt.Errorf("essential files: %w", err)
 	}
 
-	path := ""
+	optionList := []string{
+		"overseer (all)",
+		"shared_memory",
+		"world",
+		"zone",
+		"queryserv",
+		"ucs",
+		"loginserver",
+	}
+
+	command := ""
 	if len(os.Args) > 1 {
-		path = os.Args[1]
+		command = os.Args[1]
 	} else {
-		path, err = selection.New("Start which program?", []string{
-			"overseer (all)",
-			"shared_memory",
-			"world",
-			"zone",
-			"queryserv",
-			"ucs",
-			"loginserver",
-		}).RunPrompt()
+		command, err = selection.New("Start which program?", optionList).RunPrompt()
 		if err != nil {
 			return fmt.Errorf("start: %w", err)
 		}
 	}
 
-	choice := path
-	dir := cfg.ServerPath
-	switch path {
+	choice := command
+	dir, err := filepath.Abs(cwd + "/" + cfg.ServerPath)
+	if err != nil {
+		return fmt.Errorf("abs: %w", err)
+	}
+	switch choice {
 	case "overseer (all)":
-		path = "overseer" + winExt
-		dir = "."
+		command = "./overseer" + winExt
+		dir = cwd
+	case "overseer":
+		command = "./overseer" + winExt
+		dir = cwd
 	case "shared_memory":
-		path = cwd + "/" + cfg.BinPath + "/shared_memory" + winExt
+		command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/shared_memory"+winExt)
+		if err != nil {
+			return fmt.Errorf("rel: %w", err)
+		}
 	case "world":
-		path = cwd + "/" + cfg.BinPath + "/world" + winExt
+		command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/world"+winExt)
+		if err != nil {
+			return fmt.Errorf("rel: %w", err)
+		}
 	case "zone":
-		path = cwd + "/" + cfg.BinPath + "/zone" + winExt
+		command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/zone"+winExt)
+		if err != nil {
+			return fmt.Errorf("rel: %w", err)
+		}
 	case "queryserv":
-		path = cwd + "/" + cfg.BinPath + "/queryserv" + winExt
+		command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/queryserv"+winExt)
+		if err != nil {
+			return fmt.Errorf("rel: %w", err)
+		}
 	case "ucs":
-		path = cwd + "/" + cfg.BinPath + "/ucs" + winExt
+		command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/ucs"+winExt)
+		if err != nil {
+			return fmt.Errorf("rel: %w", err)
+		}
 	case "loginserver":
-		path = cwd + "/" + cfg.BinPath + "/loginserver" + winExt
+		command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/loginserver"+winExt)
+		if err != nil {
+			return fmt.Errorf("rel: %w", err)
+		}
 	default:
-		return fmt.Errorf("unknown argument %s", path)
+		return fmt.Errorf("unknown argument %s", command)
 	}
 
-	if !service.IsDatabaseUp() {
+	if choice == "overseer (all)" {
+		choice = "overseer"
+	}
+	/*if !service.IsDatabaseUp() {
 		if cfg.PortableDatabase != 1 {
 			message.Bad("Database is not running and we aren't portable. Please run it first.")
 			return fmt.Errorf("database not running")
@@ -105,18 +134,22 @@ func run() error {
 			message.Bad("Database is not running even after trying to start it.")
 			return fmt.Errorf("database failed to start")
 		}
-	}
+	}*/
 
+	fmt.Println("running", command, "from", dir)
 	start := time.Now()
-	cmd := exec.Command(path)
+	cmd := exec.Command(command)
 	cmd.Dir = dir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Env = os.Environ()
+
 	err = cmd.Run()
-	message.OKf("%s exited after %0.2f seconds\n", choice, time.Since(start).Seconds())
 	if err != nil {
-		return fmt.Errorf("%s run: %w", path, err)
+		message.Badf("%s exited after %0.2f seconds\n", choice, time.Since(start).Seconds())
+		return fmt.Errorf("%s run: %w", command, err)
 	}
+	message.OKf("%s exited after %0.2f seconds\n", choice, time.Since(start).Seconds())
 
 	return nil
 }

@@ -1,5 +1,5 @@
 NAME := overseer
-VERSION ?= 0.0.3
+VERSION ?= 0.0.6
 
 # run program
 run: build
@@ -124,3 +124,9 @@ sanitize:
 # CICD triggers this
 set-version-%:
 	@echo "VERSION=${VERSION}.$*" >> $$GITHUB_ENV
+
+dev-copy-%:
+	@echo "dev-copy-$*: building..."
+	@cd $* && GOOS=linux GOARCH=amd64 go build -ldflags="-X main.Version=${VERSION} -s -w" -o ../bin/$*
+	@echo "dev-copy-$*: copying to deq..."
+	@scp bin/$* deq@deq-dev:/eqemu/

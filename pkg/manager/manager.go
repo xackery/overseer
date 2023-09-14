@@ -8,6 +8,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+	"github.com/xackery/overseer/pkg/flog"
 	"github.com/xackery/overseer/pkg/message"
 	"github.com/xackery/overseer/pkg/reporter"
 	"github.com/xackery/overseer/pkg/runner"
@@ -17,9 +18,11 @@ import (
 type manager struct {
 	ctx           context.Context
 	displayName   string
+	path          string
 	exeName       string
 	args          []string
 	startDelay    time.Duration
+	lastStartTime time.Time
 	state         reporter.AppState
 	restartCount  int
 	lastError     string
@@ -43,8 +46,8 @@ func (e *manager) setState(state reporter.AppState) {
 }
 
 // Manage is the main loop for the zone.
-func Manage(setup SetupType, displayName string, exeName string, args ...string) {
-	go poll(displayName, exeName, args...)
+func Manage(setup SetupType, displayName string, path string, exeName string, args ...string) {
+	go poll(displayName, path, exeName, args...)
 }
 
 func InitializeDockerNetwork(networkName string) error {
@@ -83,13 +86,14 @@ func InitializeDockerNetwork(networkName string) error {
 	return nil
 }
 
-func poll(displayName string, exeName string, args ...string) {
+func poll(displayName string, path string, exeName string, args ...string) {
 	signal.AddWorker()
 	defer signal.FinishWorker()
 
 	mgr := &manager{
 		ctx:         signal.Ctx(),
 		displayName: displayName,
+		path:        path,
 		exeName:     exeName,
 		args:        args,
 		outChan:     make(chan string),
@@ -97,16 +101,18 @@ func poll(displayName string, exeName string, args ...string) {
 		doneChan:    make(chan error),
 	}
 
-	run := runner.NewProcess(mgr.outChan, mgr.doneChan, mgr.exeName, mgr.args...)
+	run := runner.NewProcess(mgr.outChan, mgr.doneChan, mgr.path, mgr.exeName, mgr.args...)
 	for {
 		select {
 		case <-mgr.ctx.Done():
+			flog.Printf("[%s] Manager exiting ctx done\n", mgr.displayName)
 			mgr.setState(reporter.AppStateStopped)
 			run.Stop()
 			return
 		default:
 		}
-		go run.Start()
+		mgr.lastStartTime = time.Now()
+		go run.Start(mgr.ctx)
 		mgr.setState(reporter.AppStateStarting)
 
 		parse(mgr)
@@ -120,12 +126,14 @@ func parse(mgr *manager) {
 		case line := <-mgr.outChan:
 			mgr.lineParse(line)
 
-			//fmt.Printf("[zone %d] %s\n", mgr.port, line)
+			flog.Printf("[%s] Manager line: %s\n", mgr.displayName, line)
 		case <-mgr.ctx.Done():
+			flog.Printf("[%s] Manager exiting ctx done\n", mgr.displayName)
 			return
 		case <-mgr.doneChan:
 			mgr.restartCount++
-			//fmt.Printf("[zone %d] Exited after %s seconds, %d restarts. Last error: %s\n", mgr.port, time.Since(start).Round(time.Second), mgr.restartCount, mgr.lastError)
+
+			flog.Printf("[%s] Manager exited after %s seconds, %d restarts. Last error: %s\n", mgr.displayName, time.Since(start).Round(time.Second), mgr.restartCount, mgr.lastError)
 			if time.Since(start) > 3*time.Minute {
 				mgr.startDelay = 0
 			}
@@ -133,21 +141,27 @@ func parse(mgr *manager) {
 			if mgr.startDelay > 30000*time.Millisecond {
 				mgr.startDelay = 5000 * time.Millisecond
 			}
-			//fmt.Printf("[zone %d] Restarting in %s\n", mgr.port, mgr.startDelay)
+			flog.Printf("[%s] Restarting in %s\n", mgr.displayName, mgr.startDelay)
 			mgr.lastError = ""
 			mgr.setState(reporter.AppStateRestarting)
 			mgr.errorCooldown = time.Now().Add(30 * time.Minute)
 			mgr.errorCount = 0
 			time.Sleep(mgr.startDelay)
 			return
+		case <-time.After(10 * time.Second):
+			if time.Since(mgr.lastStartTime) > 10*time.Second && mgr.state == reporter.AppStateStarting {
+				mgr.setState(reporter.AppStateRunning)
+			}
 		}
 	}
 }
 
 func (mgr *manager) lineParse(line string) {
 	if strings.Contains(line, "[Error]") {
+
 		mgr.lastError = line
 		mgr.lastErrorAt = time.Now()
+		flog.Printf("[%s] Error: %s\n", mgr.displayName, line)
 		mgr.errorCount++
 		if mgr.errorCount >= 10 || mgr.state == reporter.AppStateStarting {
 			mgr.errorCooldown = time.Now().Add(30 * time.Minute)
@@ -155,16 +169,34 @@ func (mgr *manager) lineParse(line string) {
 		}
 		return
 	}
-	if mgr.exeName == "zone" && strings.Contains(line, "Entering sleep mode") {
+	if strings.Contains(mgr.exeName, "zone") && strings.Contains(line, "Entering sleep mode") {
+		flog.Printf("[%s] Entering sleep mode\n", mgr.displayName)
 		mgr.setState(reporter.AppStateSleeping)
 		return
 	}
-	if mgr.exeName == "world" && strings.Contains(line, "UDP Listening on") {
+
+	if strings.Contains(mgr.exeName, "zone") &&
+		mgr.state == reporter.AppStateSleeping &&
+		strings.Contains(line, "Zone booted successfully") {
+		flog.Printf("[%s] Zone booted successfully\n", mgr.displayName)
+		mgr.setState(reporter.AppStateRunning)
+		return
+	}
+
+	if mgr.exeName == "world" && strings.Contains(line, "Starting EQ Network server on") {
+		flog.Printf("[world] Started, got 'Starting EQ Network server on'\n")
 		mgr.setState(reporter.AppStateRunning)
 		return
 	}
 	if mgr.exeName == "ucs" && strings.Contains(line, "Connected to World") {
+		flog.Printf("[ucs] Connected to World\n")
 		mgr.setState(reporter.AppStateRunning)
 		return
 	}
+
+	if time.Since(mgr.lastStartTime) > 10*time.Second && mgr.state == reporter.AppStateStarting {
+		mgr.setState(reporter.AppStateRunning)
+		return
+	}
+
 }

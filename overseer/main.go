@@ -2,10 +2,14 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/xackery/overseer/pkg/config"
+	"github.com/xackery/overseer/pkg/flog"
 	"github.com/xackery/overseer/pkg/message"
 	"github.com/xackery/overseer/pkg/operation"
 	"github.com/xackery/overseer/pkg/signal"
@@ -26,9 +30,10 @@ func main() {
 	start := time.Now()
 	err := run()
 	if isInitialized {
-		fmt.Print("\033[H\033[2J") // clear screen
+		//	fmt.Print("\033[H\033[2J") // clear screen
 	}
 	if err != nil {
+		flog.Printf("Overseer failed: %s\n", err)
 		message.Badf("Overseer failed: %s\n", err)
 		operation.Exit(1)
 	}
@@ -46,6 +51,13 @@ func run() error {
 		return fmt.Errorf("initialize manager: %w", err)
 	}
 
+	err = flog.New("overseer.log")
+	if err != nil {
+		return fmt.Errorf("new flog: %w", err)
+	}
+	defer flog.Close()
+
+	time.Sleep(10 * time.Millisecond)
 	isInitialized = true
 	p := tea.NewProgram(dashboard.New(Version))
 	go func() {
@@ -70,7 +82,7 @@ func run() error {
 	return nil
 }
 
-func parseManager(config *config.OverseerConfiguration) error {
+func parseManager(cfg *config.OverseerConfiguration) error {
 	var err error
 	winExt := ".exe"
 	if runtime.GOOS != "windows" {
@@ -78,10 +90,10 @@ func parseManager(config *config.OverseerConfiguration) error {
 	}
 
 	setupType := manager.SetupDefault
-	switch config.Setup {
+	switch cfg.Setup {
 	case "docker":
 		setupType = manager.SetupDocker
-		err = manager.InitializeDockerNetwork(config.DockerNetwork)
+		err = manager.InitializeDockerNetwork(cfg.DockerNetwork)
 		if err != nil {
 			return fmt.Errorf("initialize docker network: %w", err)
 		}
@@ -89,16 +101,55 @@ func parseManager(config *config.OverseerConfiguration) error {
 		setupType = manager.SetupDefault
 	}
 
-	for i := 0; i < config.ZoneCount; i++ {
-		manager.Manage(setupType, fmt.Sprintf("zone%d", i), "zone"+winExt, fmt.Sprintf("%d", i))
+	flog.Printf("Setup type: %s\n", cfg.Setup)
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("getwd: %w", err)
 	}
 
-	manager.Manage(setupType, "world", "world"+winExt)
-	manager.Manage(setupType, "ucs", "ucs"+winExt)
-	manager.Manage(setupType, "queryserv", "queryserv"+winExt)
-	manager.Manage(setupType, "loginserver", "loginserver"+winExt)
-	//for k, v := range config.Other {
-	//	manager.Manage(k, v)
+	dir, err := filepath.Abs(cwd + "/" + cfg.ServerPath)
+	if err != nil {
+		return fmt.Errorf("abs: %w", err)
+	}
+
+	command, err := filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/zone"+winExt)
+	if err != nil {
+		return fmt.Errorf("rel: %w", err)
+	}
+
+	for i := 0; i < cfg.ZoneCount; i++ {
+		manager.Manage(setupType, fmt.Sprintf("zone%d", i), dir, command)
+	}
+
+	command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/world"+winExt)
+	if err != nil {
+		return fmt.Errorf("rel: %w", err)
+	}
+	manager.Manage(setupType, "world", dir, command)
+	command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/ucs"+winExt)
+	if err != nil {
+		return fmt.Errorf("rel: %w", err)
+	}
+	manager.Manage(setupType, "ucs", dir, command)
+	//command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/queryserv"+winExt)
+	//if err != nil {
+	//	return fmt.Errorf("rel: %w", err)
 	//}
+	//manager.Manage(setupType, "queryserv", dir, command)
+	//command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/loginserver"+winExt)
+	//if err != nil {
+	//	return fmt.Errorf("rel: %w", err)
+	//}
+	//manager.Manage(setupType, "loginserver", dir, command)
+
+	for _, app := range cfg.Apps {
+		nonExt := strings.TrimSuffix(app, filepath.Ext(app))
+		command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/"+app)
+		if err != nil {
+			return fmt.Errorf("rel: %w", err)
+		}
+		manager.Manage(setupType, nonExt, dir, command)
+	}
 	return nil
 }

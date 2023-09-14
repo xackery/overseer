@@ -123,5 +123,17 @@ func OverseerConfig() error {
 		message.Bad("overseer.ini missing portable_database")
 	}
 
+	for _, app := range tmpConfig.Apps {
+		fi, err := os.Stat(fmt.Sprintf("%s/%s", cfg.BinPath, app))
+		if err != nil {
+			message.Badf("overseer.ini app %s not found", app)
+			continue
+		}
+		if fi.IsDir() {
+			message.Badf("overseer.ini app %s is a directory", app)
+			continue
+		}
+	}
+
 	return nil
 }

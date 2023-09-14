@@ -39,21 +39,21 @@ func renderState(state reporter.AppState, msg string) string {
 			PaddingRight(1).
 			String() + lipgloss.NewStyle().
 			Foreground(lipgloss.AdaptiveColor{Light: "#969B86", Dark: "#696969"}).
-			Render(msg+" Running")
+			Render(msg) //+" Running")
 	case reporter.AppStateSleeping:
 		return lipgloss.NewStyle().SetString("💤").
 			Foreground(subtle).
 			PaddingRight(1).
 			String() + lipgloss.NewStyle().
 			Foreground(lipgloss.AdaptiveColor{Light: "#969B86", Dark: "#696969"}).
-			Render(msg+" Sleeping")
+			Render(msg) //+" Sleeping")
 	case reporter.AppStateStopped:
 		return lipgloss.NewStyle().SetString("✖ "). //crossmark
 								Foreground(red).
 								PaddingRight(1).
 								String() + lipgloss.NewStyle().
 								Foreground(lipgloss.AdaptiveColor{Light: "#969B86", Dark: "#696969"}).
-								Render(msg+" Stopped")
+								Render(msg) //+" Stopped")
 	case reporter.AppStateStarting:
 		return lipgloss.NewStyle().SetString("⚡"). //zap
 
@@ -61,14 +61,14 @@ func renderState(state reporter.AppState, msg string) string {
 								PaddingRight(1).
 								String() + lipgloss.NewStyle().
 								Foreground(lipgloss.AdaptiveColor{Light: "#969B86", Dark: "#696969"}).
-								Render(msg+" Starting")
+								Render(msg) //+" Starting")
 	case reporter.AppStateErroring:
 		return lipgloss.NewStyle().SetString("⚠ "). //warning
 								Foreground(red).
 								PaddingRight(1).
 								String() + lipgloss.NewStyle().
 								Foreground(lipgloss.AdaptiveColor{Light: "#969B86", Dark: "#696969"}).
-								Render(msg+" Erroring")
+								Render(msg) //+" Erroring")
 	case reporter.AppStateRestarting:
 		return lipgloss.NewStyle().SetString("🔄"). //refresh
 
@@ -76,14 +76,14 @@ func renderState(state reporter.AppState, msg string) string {
 								PaddingRight(1).
 								String() + lipgloss.NewStyle().
 								Foreground(lipgloss.AdaptiveColor{Light: "#969B86", Dark: "#696969"}).
-								Render(msg+" Restarting")
+								Render(msg) //+" Restarting")
 	default:
 		return lipgloss.NewStyle().SetString("? ").
 			Foreground(yellow).
 			PaddingRight(1).
 			String() + lipgloss.NewStyle().
 			Foreground(lipgloss.AdaptiveColor{Light: "#969B86", Dark: "#696969"}).
-			Render(msg+" Unknown")
+			Render(msg) //+" Unknown")
 	}
 }
 

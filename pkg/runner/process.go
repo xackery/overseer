@@ -2,48 +2,52 @@ package runner
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
+
+	"github.com/xackery/overseer/pkg/flog"
 )
 
 // Runner handles running and polling output of a process
 type ProcessRunner struct {
 	outChan  chan (string)
 	doneChan chan (error)
+	path     string
 	name     string
 	args     []string
 	cmd      *exec.Cmd
 }
 
-func NewProcess(outChan chan (string), doneChan chan (error), name string, args ...string) *ProcessRunner {
+func NewProcess(outChan chan (string), doneChan chan (error), path string, name string, args ...string) *ProcessRunner {
 	return &ProcessRunner{
 		outChan:  outChan,
 		doneChan: doneChan,
+		path:     path,
 		name:     name,
 		args:     args,
 	}
 }
 
-func (r *ProcessRunner) Start() {
+func (r *ProcessRunner) Start(ctx context.Context) {
 	if r.cmd != nil {
+		flog.Printf("process %s already running\n", r.name)
 		return
 	}
-	r.cmd = exec.Command(r.name, r.args...)
+
+	flog.Printf("Runner exec Starting process '%s %s' from path %s\n", r.name, strings.Join(r.args, " "), r.path)
+	r.cmd = exec.CommandContext(ctx, r.name, r.args...)
+	r.cmd.Dir = r.path
 	err := r.run()
 	r.cmd = nil
+	flog.Printf("Runner %s finished with error: %s\n", r.name, err)
 	r.doneChan <- err
 }
 
 func (r *ProcessRunner) run() error {
 	var err error
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("getwd: %w", err)
-	}
-
-	r.cmd.Dir = cwd
 
 	stdout, err := r.cmd.StdoutPipe()
 	if err != nil {
@@ -58,16 +62,19 @@ func (r *ProcessRunner) run() error {
 		}
 	}()
 
+	flog.Printf("Runner start process %s\n", r.name)
 	err = r.cmd.Start()
 	if err != nil {
 		return fmt.Errorf("start: %w", err)
 	}
 
+	flog.Printf("Runner wait process %s\n", r.name)
 	err = r.cmd.Wait()
 	if err != nil {
 		return fmt.Errorf("wait: %w", err)
 	}
 
+	flog.Printf("Runner process %s self exit\n", r.name)
 	return nil
 }
 
@@ -75,6 +82,7 @@ func (r *ProcessRunner) Stop() error {
 	if r.cmd == nil {
 		return nil
 	}
+	flog.Printf("Stopping process %s\n", r.name)
 	err := r.cmd.Process.Signal(os.Interrupt)
 	if err != nil {
 		return fmt.Errorf("signal: %w", err)
