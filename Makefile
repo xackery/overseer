@@ -1,5 +1,5 @@
 NAME := overseer
-VERSION ?= 0.0.6
+VERSION ?= 0.0.7
 
 # run program
 run: build

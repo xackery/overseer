@@ -166,6 +166,21 @@ func (o *OverseerConfiguration) ExpansionURI() string {
 
 // Save saves the config
 func (c *OverseerConfiguration) Save() error {
+	fi, err := os.Stat("overseer.ini")
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("stat overseer.ini: %w", err)
+		}
+		w, err := os.Create("overseer.ini")
+		if err != nil {
+			return fmt.Errorf("create overseer.ini: %w", err)
+		}
+		w.Close()
+	}
+	if fi != nil && fi.IsDir() {
+		return fmt.Errorf("overseer.ini is a directory")
+	}
+
 	r, err := os.Open("overseer.ini")
 	if err != nil {
 		return fmt.Errorf("open: %s", strings.TrimPrefix(err.Error(), "open overseer.ini: "))

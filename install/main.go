@@ -24,62 +24,53 @@ func main() {
 	err := run()
 	if err != nil {
 		message.Badf("Install failed: %s\n", err)
-
-		if runtime.GOOS == "windows" {
-			fmt.Println("Press any key to continue...")
-			fmt.Scanln()
-		}
 		operation.Exit(1)
 	}
-
-	if runtime.GOOS == "windows" {
-		fmt.Println("Press any key to continue...")
-		fmt.Scanln()
-	}
+	operation.Exit(0)
 }
 
 func run() error {
-	config, err := config.LoadOverseerConfig("overseer.ini")
+	cfg, err := config.LoadOverseerConfig("overseer.ini")
 	if err != nil {
 		return fmt.Errorf("load overseer config: %w", err)
 	}
 	message.Banner("Install v" + Version)
 	fmt.Println("This program installs eqemu, creating a usable environment from scratch")
 
-	if config.Expansion != "" {
+	if cfg.Expansion != "" {
 		choice, err := confirmation.New("It looks like install has been ran before. Would you like to reconfigure the install?", confirmation.No).RunPrompt()
 		if err != nil {
 			return fmt.Errorf("select reconfigure: %w", err)
 		}
 		if choice {
 			fmt.Println("OK, flushing config! You'll be prompted new install options.")
-			config.Expansion = ""
-			config.PortableDatabase = 0
+			cfg.Expansion = ""
+			cfg.PortableDatabase = 0
+		}
+	} else {
+		err = config.ConfigSetup(cfg)
+		if err != nil {
+			return fmt.Errorf("install config setup: %w", err)
 		}
 	}
 
-	err = installConfigSetup(config)
-	if err != nil {
-		return fmt.Errorf("install config setup: %w", err)
-	}
-
 	start := time.Now()
-	err = downloadBinaries(config)
+	err = downloadBinaries(cfg)
 	if err != nil {
 		return fmt.Errorf("download binaries: %w", err)
 	}
 
-	err = downloadQuests(config)
+	err = downloadQuests(cfg)
 	if err != nil {
 		return fmt.Errorf("download quests: %w", err)
 	}
 
-	err = downloadMaps(config)
+	err = downloadMaps(cfg)
 	if err != nil {
 		return fmt.Errorf("download quests: %w", err)
 	}
 
-	err = downloadPortableDatabase(config)
+	err = downloadPortableDatabase(cfg)
 	if err != nil {
 		return fmt.Errorf("download portable database: %w", err)
 	}
