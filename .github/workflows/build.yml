@@ -1,5 +1,8 @@
 name: Build Go Binaries and Prep Release
-on: [push]
+on:
+  push:
+    branches:
+      - main
 jobs:
   build_and_preview:
     runs-on: ubuntu-latest
@@ -10,7 +13,7 @@ jobs:
       - run: go test -tags ci,wayland ./...
       - run: make build-all
       - uses: "marvinpinto/action-automatic-releases@latest"
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/main'
         with:
           repo_token: "${{secrets.GITHUB_TOKEN}}"
           automatic_release_tag: "${{env.VERSION}}"

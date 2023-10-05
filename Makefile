@@ -1,5 +1,5 @@
 NAME := overseer
-VERSION ?= 0.0.7
+VERSION ?= 0.0.8
 
 # run program
 run: build
@@ -8,7 +8,7 @@ run: build
 
 run-%:
 	@echo "run-$*: running..."
-	@cd $* && GOOS=darwin GOARCH=amd64 go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -s -w" -o ../bin/$*
+	@cd $* && go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -s -w" -o ../bin/$*
 	cd bin && ./$*
 
 # build for local OS
