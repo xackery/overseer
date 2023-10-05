@@ -20,6 +20,7 @@ type OverseerConfiguration struct {
 	PortableDatabase int
 	AutoUpdate       int
 	Apps             []string
+	IsScreenStart    bool
 }
 
 // LoadOverseerConfig loads an overseer config file
@@ -101,6 +102,17 @@ func LoadOverseerConfig(path string) (*OverseerConfiguration, error) {
 				}
 			case "app":
 				config.Apps = append(config.Apps, value)
+			case "is_screen_start":
+				val, err := strconv.Atoi(value)
+				if err != nil {
+					config.IsScreenStart = false
+					if strings.EqualFold(value, "true") {
+						config.IsScreenStart = true
+					}
+				}
+				if val == 1 {
+					config.IsScreenStart = true
+				}
 			default:
 				return nil, fmt.Errorf("unknown key in overseer.ini: %s", key)
 			}
@@ -267,6 +279,19 @@ func (c *OverseerConfiguration) Save() error {
 			out += fmt.Sprintf("%s = %d\n", key, c.AutoUpdate)
 			tmpConfig.AutoUpdate = 1
 			continue
+		case "is_screen_start":
+			if tmpConfig.IsScreenStart {
+				continue
+			}
+
+			val := 0
+			if c.IsScreenStart {
+				val = 1
+			}
+
+			out += fmt.Sprintf("%s = %d\n", key, val)
+			tmpConfig.IsScreenStart = true
+			continue
 		}
 		line = fmt.Sprintf("%s = %s", key, value)
 		out += line + "\n"
@@ -297,6 +322,11 @@ func (c *OverseerConfiguration) Save() error {
 	if tmpConfig.AutoUpdate == 0 {
 		out += fmt.Sprintf("auto_update = %d\n", c.AutoUpdate)
 	}
+	val := 0
+	if tmpConfig.IsScreenStart {
+		val = 1
+	}
+	out += fmt.Sprintf("is_screen_start = %d\n", val)
 
 	err = os.WriteFile("overseer.ini", []byte(out), 0644)
 	if err != nil {

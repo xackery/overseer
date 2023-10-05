@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -30,7 +31,7 @@ func ConfigSetup(cfg *OverseerConfiguration) error {
 		return nil
 	}
 
-	choice, err := selection.New("Expansion?", []string{
+	choice, err := selection.New("What expansion is this server?", []string{
 		"Classic",
 		"Kunark",
 		"Velious",
@@ -46,32 +47,39 @@ func ConfigSetup(cfg *OverseerConfiguration) error {
 	}
 	cfg.Expansion = strings.ToLower(choice)
 
-	choice, err = selection.New("Setup? (default recommended, docker experimental)", []string{
-		"default",
-		"docker",
-	}).RunPrompt()
+	isYes, err := confirmation.New("Use docker?", confirmation.No).RunPrompt()
 	if err != nil {
 		return fmt.Errorf("select setup: %w", err)
 	}
-	cfg.Setup = strings.ToLower(choice)
+	cfg.Setup = "default"
+	if isYes {
+		cfg.Setup = "docker"
+	}
 
-	preChoice := confirmation.Yes
+	if cfg.Setup == "default" && runtime.GOOS != "windows" {
+		isYes, err = confirmation.New("Use screen?", confirmation.No).RunPrompt()
+		if err != nil {
+			return fmt.Errorf("select screen: %w", err)
+		}
+		cfg.IsScreenStart = isYes
+	}
+
+	preChoice := confirmation.No
 	if service.IsDatabaseUp() {
 		fmt.Println("It looks like a MySQL server is already running")
 		preChoice = confirmation.No
 	}
 
-	isChoice, err := confirmation.New("Would you like to install and use a portable database service?", preChoice).RunPrompt()
+	isChoice, err := confirmation.New("Use portable database?", preChoice).RunPrompt()
 	if err != nil {
 		return fmt.Errorf("select portable database: %w", err)
 	}
+
 	if isChoice {
 		cfg.PortableDatabase = 1
-	} else {
-		cfg.PortableDatabase = 0
 	}
 
-	isChoice, err = confirmation.New("Do you want to auto update everything on start run?", confirmation.No).RunPrompt()
+	isChoice, err = confirmation.New("Auto update before overseer start?", confirmation.No).RunPrompt()
 	if err != nil {
 		return fmt.Errorf("select auto update: %w", err)
 	}

@@ -67,7 +67,6 @@ func run() error {
 
 	totalCount := 0
 
-	fmt.Println("First, let's try to stop overseer gracefully")
 	delay := 5 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -76,11 +75,12 @@ func run() error {
 		return fmt.Errorf("kill overseer: %w", err)
 	}
 	if count > 0 {
-		message.OK("Sent overseer stop signal, waiting a few seconds for it to gracefully shut down...\n")
+		message.OK("Sent overseer stop signal")
 		totalCount += count
+		message.Emote("⏱️", "Waiting 5 seconds for overseer to stop")
 		time.Sleep(delay)
 	} else {
-		fmt.Println("Overseer isn't running")
+		message.OK("Overseer isn't running")
 	}
 
 	fmt.Println("Stopping everything gracefully")
@@ -94,13 +94,17 @@ func run() error {
 			return fmt.Errorf("kill %s: %w", process, err)
 		}
 		totalCount += count
-		message.OKf("Stopped %d %s processes\n", count, process)
+		if count > 0 {
+			message.OKf("Stopped %d %s processes\n", count, process)
+		}
 	}
 	message.OKf("Stopped %d total processes\n", totalCount)
 
-	time.Sleep(1)
+	if totalCount > 0 {
+		message.Emote("⏱️", "Waiting 5 seconds for programs to stop")
+		time.Sleep(5 * time.Second)
+	}
 
-	fmt.Println("Now, let's try to kill processes that are still running")
 	totalCount = 0
 	for _, process := range processes {
 		ctxTimeout := 500 * time.Millisecond
@@ -112,7 +116,9 @@ func run() error {
 			return fmt.Errorf("kill %s: %w", process, err)
 		}
 		totalCount += count
-		message.OKf("Killed %d %s processes\n", count, process)
+		if count > 0 {
+			message.OKf("Killed %d %s processes\n", count, process)
+		}
 	}
 
 	message.OKf("Killed %d total processes\n", totalCount)

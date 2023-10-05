@@ -1,14 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
+	"github.com/erikgeiser/promptkit/confirmation"
 	"github.com/erikgeiser/promptkit/selection"
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/xackery/overseer/pkg/config"
 	"github.com/xackery/overseer/pkg/message"
 	"github.com/xackery/overseer/pkg/operation"
@@ -76,10 +80,22 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("abs: %w", err)
 	}
+	args := []string{}
+	isScreen := false
 	switch choice {
 	case "overseer (all)":
-		command = "./overseer" + winExt
 		dir = cwd
+		if cfg.IsScreenStart {
+			screenPath, err := exec.LookPath("screen")
+			if err != nil {
+				message.Bad("screen is not installed. Skipping screen start.")
+			}
+			args = append(args, "-S", "overseer", "-t", "overseer", "-dm", "./overseer"+winExt)
+			command = screenPath
+			isScreen = true
+		} else {
+			command = "./overseer" + winExt
+		}
 	case "overseer":
 		command = "./overseer" + winExt
 		dir = cwd
@@ -136,20 +152,60 @@ func run() error {
 		}
 	}*/
 
-	fmt.Println("running", command, "from", dir)
+	if !strings.Contains(choice, "zone") {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		processes, err := process.ProcessesWithContext(ctx)
+		if err != nil {
+			return fmt.Errorf("processes: %w", err)
+		}
+		var n string
+		for _, p := range processes {
+			n, err = p.NameWithContext(ctx)
+			if err != nil {
+				continue
+			}
+			if !strings.Contains(n, choice) {
+				continue
+			}
+			isOK, err := confirmation.New(fmt.Sprintf("%s is already running. Start another copy?", n), confirmation.No).RunPrompt()
+			if err != nil {
+				return fmt.Errorf("confirmation: %w", err)
+			}
+			if !isOK {
+				message.OK("OK, exiting")
+				return nil
+			}
+			break
+		}
+	}
+
+	fmt.Println("Running", command, strings.Join(args, " "), "from", dir)
 	start := time.Now()
-	cmd := exec.Command(command)
+	cmd := exec.Command(command, args...)
 	cmd.Dir = dir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Env = os.Environ()
 
-	err = cmd.Run()
-	if err != nil {
-		message.Badf("%s exited after %0.2f seconds\n", choice, time.Since(start).Seconds())
-		return fmt.Errorf("%s run: %w", command, err)
+	if isScreen {
+		err = cmd.Start()
+		if err != nil {
+			return fmt.Errorf("start %s: %w", command, err)
+		}
+		message.OK("Screen of overseer started. You can use `screen -r overseer` to view it.")
+		return nil
+	} else {
+		err = cmd.Run()
 	}
-	message.OKf("%s exited after %0.2f seconds\n", choice, time.Since(start).Seconds())
+	if err != nil {
+		message.Badf("Start %s exited after %0.2f seconds\n", command, time.Since(start).Seconds())
+		if exitError, ok := err.(*exec.ExitError); ok {
+			return fmt.Errorf("start %s: %s", command, exitError.Error())
+		}
+		return fmt.Errorf("start %s: %w", command, err)
+	}
+	message.OKf("Start %s exited after %0.2f seconds\n", choice, time.Since(start).Seconds())
 
 	return nil
 }
