@@ -13,7 +13,7 @@ run-%:
 
 # build for local OS
 build:
-	cd overseer && GOOS=darwin GOARCH=amd64 go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -s -w" -o ../bin/overseer main.go
+	cd overseer && go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -s -w" -o ../bin/overseer main.go
 	
 build-mock:
 	@echo "build-mock: building to bin/${NAME}..."
