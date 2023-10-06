@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 
+	"github.com/erikgeiser/promptkit/confirmation"
 	"github.com/xackery/overseer/diagnose/check"
+	"github.com/xackery/overseer/diagnose/deep"
 	"github.com/xackery/overseer/pkg/config"
 	"github.com/xackery/overseer/pkg/message"
 	"github.com/xackery/overseer/pkg/operation"
@@ -20,6 +22,7 @@ func main() {
 		message.Badf("Diagnostics failed: %s\n", err)
 		operation.Exit(1)
 	}
+	operation.Exit(0)
 }
 
 func run() error {
@@ -52,8 +55,33 @@ func run() error {
 		return fmt.Errorf("paths %w", err)
 	}
 
-	message.OK("Completed diagnose")
-	operation.Exit(0)
+	message.OK("Completed quick diagnose")
+	choice, err := confirmation.New("Run deep diagnostics?", confirmation.Yes).RunPrompt()
+	if err != nil {
+		return fmt.Errorf("select deep diagnose: %w", err)
+	}
+	if !choice {
+		message.OK("OK, exiting\n")
+		return nil
+	}
+
+	type op struct {
+		name string
+		op   func(*config.OverseerConfiguration, *config.EQEmuConfiguration) error
+	}
+
+	ops := []op{
+		{"Table diagnose", deep.Table},
+	}
+
+	for _, op := range ops {
+		err = op.op(cfg, emuCfg)
+		if err != nil {
+			message.Badf("%s: %s\n", op.name, err)
+		} else {
+			message.OKf("%s: OK\n", op.name)
+		}
+	}
 
 	return nil
 }

@@ -1,5 +1,5 @@
 NAME := overseer
-VERSION ?= 0.0.9
+VERSION ?= 0.0.11
 
 # run program
 run: build
@@ -116,7 +116,7 @@ sanitize:
 	test -z $(goimports -e -d . | tee /dev/stderr)
 	-go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
 	gocyclo -over 99 .
-	golint -set_exit_status $(go list -tags ci ./...)
+	go vet ./...
 	staticcheck -go 1.14 ./...
 	go test -tags ci -covermode=atomic -coverprofile=coverage.out ./...
     coverage=`go tool cover -func coverage.out | grep total | tr -s '\t' | cut -f 3 | grep -o '[^%]*'`

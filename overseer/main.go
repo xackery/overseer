@@ -21,23 +21,23 @@ import (
 )
 
 var (
-	Version       = "0.0.0"
-	isInitialized = false
+	Version = "0.0.0"
 )
 
 // icon link: https://prefinem.com/simple-icon-generator/#eyJiYWNrZ3JvdW5kQ29sb3IiOiIjMDAwMDAwIiwiYm9yZGVyQ29sb3IiOiIjMDAwMDAwIiwiYm9yZGVyV2lkdGgiOiI0IiwiZXhwb3J0U2l6ZSI6IjI1NiIsImV4cG9ydGluZyI6ZmFsc2UsImZvbnRGYW1pbHkiOiJBYmhheWEgTGlicmUiLCJmb250UG9zaXRpb24iOiI2NSIsImZvbnRTaXplIjoiNDUiLCJmb250V2VpZ2h0Ijo2MDAsImltYWdlIjoiIiwiaW1hZ2VNYXNrIjoiIiwiaW1hZ2VTaXplIjoiNDAiLCJzaGFwZSI6ImNpcmNsZSIsInRleHQiOiLwn5GB77iPIn0
 func main() {
 	start := time.Now()
 	err := run()
-	if isInitialized {
-		//	fmt.Print("\033[H\033[2J") // clear screen
-	}
+	//if isInitialized {
+	//	fmt.Print("\033[H\033[2J") // clear screen
+	//}
 	if err != nil {
 		flog.Printf("Overseer failed: %s\n", err)
 		message.Badf("Overseer failed: %s\n", err)
 		operation.Exit(1)
 	}
 	message.OKf("Overseer exited after %0.2f seconds\n", time.Since(start).Seconds())
+	operation.Exit(0)
 }
 
 func run() error {
@@ -58,7 +58,6 @@ func run() error {
 	defer flog.Close()
 
 	time.Sleep(10 * time.Millisecond)
-	isInitialized = true
 	p := tea.NewProgram(dashboard.New(Version))
 	go func() {
 		for {

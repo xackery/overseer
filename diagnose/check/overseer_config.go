@@ -85,6 +85,8 @@ func OverseerConfig() error {
 					message.Badf("overseer.ini unknown portable_database value %s", value)
 				}
 				tmpConfig.PortableDatabase = 1
+			case "is_screen_start":
+
 			default:
 				message.Badf("overseer.ini unknown key in overseer.ini: %s", key)
 			}

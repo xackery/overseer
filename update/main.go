@@ -18,6 +18,7 @@ func main() {
 		message.Badf("Update failed: %s\n", err)
 		operation.Exit(1)
 	}
+	operation.Exit(0)
 }
 
 func run() error {

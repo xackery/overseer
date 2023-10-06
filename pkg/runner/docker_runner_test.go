@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -10,6 +11,10 @@ import (
 )
 
 func TestDockerNetworkList(t *testing.T) {
+	if os.Getenv("SINGLE_TEST") != "1" {
+		t.Skip("skipping test; SINGLE_TEST not set")
+	}
+
 	ctx := context.Background()
 
 	cli, err := client.NewClientWithOpts(client.FromEnv)
@@ -29,6 +34,10 @@ func TestDockerNetworkList(t *testing.T) {
 }
 
 func TestDockerContainerList(t *testing.T) {
+	if os.Getenv("SINGLE_TEST") != "1" {
+		t.Skip("skipping test; SINGLE_TEST not set")
+	}
+
 	ctx := context.Background()
 
 	cli, err := client.NewClientWithOpts(client.FromEnv)

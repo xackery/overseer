@@ -2,13 +2,14 @@ package check
 
 import (
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/xackery/overseer/pkg/config"
 	"github.com/xackery/overseer/pkg/message"
 )
 
-func Paths(cfg *config.OverseerConfiguration, emuCfg *config.Configuration) error {
+func Paths(cfg *config.OverseerConfiguration, emuCfg *config.EQEmuConfiguration) error {
 	if cfg.ServerPath == "" {
 		message.Badf("overseer.ini server_path is empty ")
 		message.Link("https://o.eqcodex.com/100")
@@ -16,6 +17,22 @@ func Paths(cfg *config.OverseerConfiguration, emuCfg *config.Configuration) erro
 	if cfg.BinPath == "" {
 		message.Badf("overseer.ini bin_path is empty ")
 		message.Link("https://o.eqcodex.com/101")
+		essentialFiles := []string{
+			"world",
+			"zone",
+			"shared_memory",
+		}
+		winExe := ""
+		if runtime.GOOS == "windows" {
+			winExe = ".exe"
+		}
+		for _, essentialFile := range essentialFiles {
+			_, err := os.Stat(cfg.BinPath + "/" + essentialFile + winExe)
+			if err != nil {
+				message.Badf("overseer.ini bin_path/%s not found ", essentialFile+winExe)
+				message.Link("https://o.eqcodex.com/101")
+			}
+		}
 	}
 	if cfg.ZoneCount == 0 {
 		message.Badf("overseer.ini zone_count is 0 ")

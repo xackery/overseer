@@ -27,3 +27,14 @@ func Badf(format string, a ...interface{}) {
 func Bad(msg string) {
 	Badf("%s\n", fmt.Sprint(msg))
 }
+
+func Skipf(format string, a ...interface{}) {
+	fmt.Printf(lipgloss.NewStyle().SetString("⏩").
+		Foreground(lipgloss.AdaptiveColor{Light: "#FF5555", Dark: "#FF5555"}).
+		PaddingRight(1).
+		String()+format, a...)
+}
+
+func Skip(msg string) {
+	Skipf("%s\n", fmt.Sprint(msg))
+}

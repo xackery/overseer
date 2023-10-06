@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -17,6 +18,7 @@ import (
 
 var (
 	Version = "0.0.0"
+	winExt  = ""
 )
 
 // icon link: https://prefinem.com/simple-icon-generator/#eyJiYWNrZ3JvdW5kQ29sb3IiOiIjMDA4MGZmIiwiYm9yZGVyQ29sb3IiOiIjMDAwMDAwIiwiYm9yZGVyV2lkdGgiOiI0IiwiZXhwb3J0U2l6ZSI6IjI1NiIsImV4cG9ydGluZyI6dHJ1ZSwiZm9udEZhbWlseSI6IkFiaGF5YSBMaWJyZSIsImZvbnRQb3NpdGlvbiI6IjU2IiwiZm9udFNpemUiOiIyMiIsImZvbnRXZWlnaHQiOjYwMCwiaW1hZ2UiOiIiLCJpbWFnZU1hc2siOiIiLCJpbWFnZVNpemUiOiI1MCIsInNoYXBlIjoic3F1YXJlIiwidGV4dCI6IklOU1RBTEwifQ
@@ -30,6 +32,10 @@ func main() {
 }
 
 func run() error {
+	if runtime.GOOS == "windows" {
+		winExt = ".exe"
+	}
+
 	cfg, err := config.LoadOverseerConfig("overseer.ini")
 	if err != nil {
 		return fmt.Errorf("load overseer config: %w", err)
@@ -55,24 +61,25 @@ func run() error {
 	}
 
 	start := time.Now()
-	err = downloadBinaries(cfg)
-	if err != nil {
-		return fmt.Errorf("download binaries: %w", err)
+
+	type opEntry struct {
+		name string
+		op   func(*config.OverseerConfiguration) error
+	}
+	ops := []opEntry{
+		{"download binaries", downloadBinaries},
+		{"configure eqemu_config.json", configureEqemuConfig},
+		{"download quests", downloadQuests},
+		{"download maps", downloadMaps},
+		{"download portable database", downloadPortableDatabase},
+		{"download assets", downloadAssets},
 	}
 
-	err = downloadQuests(cfg)
-	if err != nil {
-		return fmt.Errorf("download quests: %w", err)
-	}
-
-	err = downloadMaps(cfg)
-	if err != nil {
-		return fmt.Errorf("download quests: %w", err)
-	}
-
-	err = downloadPortableDatabase(cfg)
-	if err != nil {
-		return fmt.Errorf("download portable database: %w", err)
+	for _, op := range ops {
+		err = op.op(cfg)
+		if err != nil {
+			return fmt.Errorf("%s: %w", op.name, err)
+		}
 	}
 
 	seconds := fmt.Sprintf("%.2f", time.Since(start).Seconds())
@@ -80,9 +87,30 @@ func run() error {
 	return nil
 }
 
-func downloadBinaries(config *config.OverseerConfiguration) error {
-	if config.Setup == "docker" {
+func downloadBinaries(cfg *config.OverseerConfiguration) error {
+	if cfg.Setup == "docker" {
 		return fmt.Errorf("docker setup not yet supported")
+	}
+
+	files := []string{
+		"zone",
+		"world",
+	}
+
+	areBinariesDownloaded := true
+	for _, file := range files {
+		path := "bin/" + file
+		_, err := os.Stat(path + winExt)
+		if err == nil {
+			continue
+		}
+		areBinariesDownloaded = false
+		break
+	}
+
+	if areBinariesDownloaded {
+		message.Skip("Skipping binaries download, already exists")
+		return nil
 	}
 
 	url := "https://github.com/EQEmu/Server/releases/latest/download/eqemu-server-" + runtime.GOOS + "-x64.zip"
@@ -123,14 +151,19 @@ func downloadBinaries(config *config.OverseerConfiguration) error {
 	return nil
 }
 
-func downloadQuests(config *config.OverseerConfiguration) error {
+func downloadQuests(cfg *config.OverseerConfiguration) error {
+	_, err := os.Stat("server/quests/airplane")
+	if err == nil {
+		message.Skip("Skipping quests download, already exists")
+		return nil
+	}
 
-	err := os.MkdirAll("server/quests", 0755)
+	err = os.MkdirAll("server/quests", 0755)
 	if err != nil {
 		return fmt.Errorf("mkdir server/quests: %w", err)
 	}
 
-	url := "https://github.com/eqemu-pack/" + config.ExpansionURI() + "/releases/download/latest/quests.zip"
+	url := "https://github.com/eqemu-pack/" + cfg.ExpansionURI() + "/releases/download/latest/quests.zip"
 
 	cachePath := "server/cache/quests.zip"
 	isCache, err := download.Save(url, cachePath)
@@ -152,14 +185,19 @@ func downloadQuests(config *config.OverseerConfiguration) error {
 	return nil
 }
 
-func downloadMaps(config *config.OverseerConfiguration) error {
+func downloadMaps(cfg *config.OverseerConfiguration) error {
+	_, err := os.Stat("server/maps/base")
+	if err == nil {
+		message.Skip("Skipping maps download, already exists")
+		return nil
+	}
 
-	err := os.MkdirAll("server/maps", 0755)
+	err = os.MkdirAll("server/maps", 0755)
 	if err != nil {
 		return fmt.Errorf("mkdir server/maps: %w", err)
 	}
 
-	url := "https://github.com/eqemu-pack/" + config.ExpansionURI() + "/releases/download/latest/maps.zip"
+	url := "https://github.com/eqemu-pack/" + cfg.ExpansionURI() + "/releases/download/latest/maps.zip"
 
 	cachePath := "server/cache/maps.zip"
 	isCache, err := download.Save(url, cachePath)
@@ -181,8 +219,8 @@ func downloadMaps(config *config.OverseerConfiguration) error {
 	return nil
 }
 
-func downloadPortableDatabase(config *config.OverseerConfiguration) error {
-	if config.PortableDatabase == 0 {
+func downloadPortableDatabase(cfg *config.OverseerConfiguration) error {
+	if cfg.PortableDatabase == 0 {
 		return nil
 	}
 	err := os.MkdirAll("server/database", 0755)
@@ -218,4 +256,134 @@ func downloadPortableDatabase(config *config.OverseerConfiguration) error {
 	message.OK("Downloaded db")
 
 	return nil
+}
+
+func configureEqemuConfig(cfg *config.OverseerConfiguration) error {
+	path := cfg.ServerPath + "/eqemu_config.json"
+	_, err := os.Stat(path)
+	if err == nil {
+		message.Skip("Skipping eqemu_config.json configuration, already exists")
+		return nil
+	}
+
+	ecfg := config.EQEmuConfiguration{
+		Server: config.ServerConfig{
+			Zones: config.ZonesConfig{
+				DefaultStatus: "0",
+				Ports: config.PortsConfig{
+					Low:  "7000",
+					High: "7400",
+				},
+			},
+			QSDatabase: config.QSDatabaseConfig{
+				Host:     "localhost",
+				Port:     "3306",
+				Username: "root",
+				Password: "eqemu",
+				DB:       "peq",
+			},
+			ChatServer: config.ChatServerConfig{
+				Port: "7778",
+				Host: "",
+			},
+			MailServer: config.MailServerConfig{
+				Host: "",
+				Port: "7778",
+			},
+			World: config.WorldConfig{
+				LoginServer1: config.LoginServerConfig{
+					Account:  "",
+					Password: "",
+					Legacy:   "1",
+					Host:     "login.eqemulator.net",
+					Port:     "5998",
+				},
+				LoginServer2: config.LoginServerConfig{
+					Port: "5998",
+					Host: "login.projecteq.net",
+				},
+				TCP: config.TCPConfig{
+					IP:   "127.0.0.1",
+					Port: "9001",
+				},
+				Telnet: config.TelnetConfig{
+					IP:      "0.0.0.0",
+					Port:    "9000",
+					Enabled: "true",
+				},
+				// generate a 32 character random string
+				Key:       randomString(32),
+				ShortName: "unk",
+				// generate a 8 character random string
+				LongName: fmt.Sprintf("Overseer [%s]", randomString(8)),
+			},
+			Database: config.DatabaseConfig{
+				DB:   "peq",
+				Host: "127.0.0.1",
+				Port: "3306",
+			},
+			Files: config.FilesConfig{
+				Opcodes:     "assets/opcodes/opcodes.conf",
+				MailOpcodes: "assets/opcodes/mail_opcodes.conf",
+			},
+			Directories: config.DirectoriesConfig{
+				Patches: "assets/patches/",
+				Opcodes: "assets/opcodes/",
+			},
+		},
+	}
+	w, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("create %s: %w", path, err)
+	}
+	err = ecfg.Save(w)
+	if err != nil {
+		return fmt.Errorf("save %s: %w", path, err)
+	}
+	message.OK("Created eqemu_config.json")
+	return nil
+}
+
+func downloadAssets(cfg *config.OverseerConfiguration) error {
+	_, err := os.Stat("server/assets/opcodes")
+	if err == nil {
+		message.Skip("Skipping assets download, already exists")
+		return nil
+	}
+
+	err = os.MkdirAll("server/assets", 0755)
+	if err != nil {
+		return fmt.Errorf("mkdir server/assets: %w", err)
+	}
+
+	url := "https://github.com/eqemu-pack/assets/releases/download/latest/assets.zip"
+	cachePath := "server/cache/assets.zip"
+
+	isCache, err := download.Save(url, cachePath)
+	if err != nil {
+		return fmt.Errorf("download %s: %w", filepath.Base(cachePath), err)
+	}
+
+	if isCache {
+		fmt.Println("Using cached download at", cachePath)
+	}
+
+	err = zip.Unpack(cachePath, "server/assets/")
+	if err != nil {
+		return fmt.Errorf("unpack %s: %w", filepath.Base(cachePath), err)
+	}
+
+	message.OK("Downloaded assets")
+
+	return nil
+}
+
+func randomString(length int) string {
+	// https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+	return string(b)
 }
