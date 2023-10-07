@@ -6,6 +6,18 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+var (
+	isOK bool
+)
+
+func OKReset() {
+	isOK = true
+}
+
+func IsOK() bool {
+	return isOK
+}
+
 func OKf(format string, a ...interface{}) {
 	fmt.Printf(lipgloss.NewStyle().SetString("✅").
 		Foreground(lipgloss.AdaptiveColor{Light: "#43BF6D", Dark: "#73F59F"}).
@@ -22,6 +34,7 @@ func Badf(format string, a ...interface{}) {
 		Foreground(lipgloss.AdaptiveColor{Light: "#FF5555", Dark: "#FF5555"}).
 		PaddingRight(1).
 		String()+format, a...)
+	isOK = false
 }
 
 func Bad(msg string) {

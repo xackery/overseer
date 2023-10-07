@@ -59,9 +59,9 @@ type MailServerConfig struct {
 
 // WorldConfig is the configuration for the EQEmu server world
 type WorldConfig struct {
-	Locked       bool              `json:"locked"`
+	Locked       string            `json:"locked"`
 	LoginServer1 LoginServerConfig `json:"loginserver1"`
-	LoginServer2 LoginServerConfig `json:"loginserver2"`
+	LoginServer2 LoginServerConfig `json:"loginserver2,omitempty"`
 	TCP          TCPConfig         `json:"tcp"`
 	Telnet       TelnetConfig      `json:"telnet"`
 	Key          string            `json:"key"`
@@ -69,7 +69,7 @@ type WorldConfig struct {
 	LongName     string            `json:"longname"`
 	LocalAddress string            `json:"localaddress"`
 	Address      string            `json:"address"`
-	LoginServer3 LoginServerConfig `json:"loginserver3"`
+	LoginServer3 LoginServerConfig `json:"loginserver3,omitempty"`
 }
 
 // LoginServerConfig is the configuration for the EQEmu server loginserver

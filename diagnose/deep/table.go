@@ -28,6 +28,7 @@ func Table(cfg *config.OverseerConfiguration, ecfg *config.EQEmuConfiguration) e
 		{name: "account", rows: 1},
 	}
 
+	message.OKReset()
 	for _, table := range tables {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -48,6 +49,9 @@ func Table(cfg *config.OverseerConfiguration, ecfg *config.EQEmuConfiguration) e
 		if count < table.rows {
 			message.Badf("table %s has %d rows, expected greater than %d\n", table.name, count, table.rows)
 		}
+	}
+	if message.IsOK() {
+		message.OK("Tables OK")
 	}
 
 	return nil

@@ -33,6 +33,6 @@ func EqemuConfig(cfg *config.OverseerConfiguration) error {
 		return fmt.Errorf("database.db is empty")
 	}
 
-	message.OK("eqemu_config.json found")
+	message.OK("Eqemu Config OK")
 	return nil
 }

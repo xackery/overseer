@@ -12,6 +12,7 @@ import (
 )
 
 func OverseerConfig() error {
+	message.OKReset()
 	fi, err := os.Stat("overseer.ini")
 	if err != nil {
 		return fmt.Errorf("not found")
@@ -135,6 +136,10 @@ func OverseerConfig() error {
 			message.Badf("overseer.ini app %s is a directory", app)
 			continue
 		}
+	}
+
+	if message.IsOK() {
+		message.OK("Overseer Config OK")
 	}
 
 	return nil
