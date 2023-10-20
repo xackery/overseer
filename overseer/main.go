@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,16 +9,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xackery/overseer/pkg/config"
-	"github.com/xackery/overseer/pkg/flog"
-	"github.com/xackery/overseer/pkg/message"
-	"github.com/xackery/overseer/pkg/operation"
-	"github.com/xackery/overseer/pkg/signal"
+	"github.com/lxn/walk"
+	"github.com/xackery/overseer/share/config"
+	"github.com/xackery/overseer/share/flog"
+	"github.com/xackery/overseer/share/gui"
+	"github.com/xackery/overseer/share/message"
+	"github.com/xackery/overseer/share/operation"
+	"github.com/xackery/overseer/share/signal"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/xackery/overseer/pkg/dashboard"
-	"github.com/xackery/overseer/pkg/manager"
-	"github.com/xackery/overseer/pkg/reporter"
+	"github.com/xackery/overseer/lib/manager"
+	"github.com/xackery/overseer/share/dashboard"
+	"github.com/xackery/overseer/share/reporter"
 )
 
 var (
@@ -41,6 +44,15 @@ func main() {
 }
 
 func run() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	g, err := NewMainWindow(ctx, cancel, Version)
+	if err != nil {
+		return fmt.Errorf("new main window: %w", err)
+	}
+	gui.New(g)
+
 	config, err := config.LoadOverseerConfig("overseer.ini")
 	if err != nil {
 		return fmt.Errorf("load overseer config: %w", err)
@@ -57,6 +69,9 @@ func run() error {
 	}
 	defer flog.Close()
 
+	if runtime.GOOS == "windows" {
+		return runWindows(ctx, g)
+	}
 	time.Sleep(10 * time.Millisecond)
 	p := tea.NewProgram(dashboard.New(Version))
 	go func() {
@@ -76,6 +91,56 @@ func run() error {
 	_, err = p.Run()
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func runWindows(ctx context.Context, g *Gui) error {
+	go func() {
+		for {
+			fmt.Println("listening")
+			select {
+			case <-ctx.Done():
+				return
+			case <-reporter.SendUpdateChan:
+			}
+
+			items := []*ProcessViewEntry{}
+			apps := reporter.AppPtr()
+			fmt.Println("Got update", len(apps))
+			for name, app := range apps {
+				if app == nil {
+					continue
+				}
+				items = append(items, &ProcessViewEntry{
+					Name:   name,
+					PID:    fmt.Sprintf("%d", app.PID),
+					Status: reporter.AppStateString(app.Status),
+					Uptime: app.Uptime(),
+				})
+			}
+
+			g.SetProcessViewItems(items)
+
+		}
+	}()
+	go func() {
+		<-ctx.Done()
+		fmt.Println("Doing clean up process...")
+		gui.SetTitle("Shutting down... Please wait, ensuring all processes are exiting!")
+		signal.Cancel()
+		signal.WaitWorker()
+		gui.Close()
+		walk.App().Exit(0)
+		fmt.Println("Done, exiting")
+		os.Exit(0)
+	}()
+
+	errCode := gui.Run()
+	if errCode != 0 {
+		fmt.Println("Failed to run:", errCode)
+		os.Exit(1)
 	}
 
 	return nil

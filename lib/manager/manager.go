@@ -8,11 +8,11 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"github.com/xackery/overseer/pkg/flog"
-	"github.com/xackery/overseer/pkg/message"
-	"github.com/xackery/overseer/pkg/reporter"
-	"github.com/xackery/overseer/pkg/runner"
-	"github.com/xackery/overseer/pkg/signal"
+	"github.com/xackery/overseer/lib/runner"
+	"github.com/xackery/overseer/share/flog"
+	"github.com/xackery/overseer/share/message"
+	"github.com/xackery/overseer/share/reporter"
+	"github.com/xackery/overseer/share/signal"
 )
 
 type manager struct {
@@ -43,6 +43,10 @@ const (
 func (e *manager) setState(state reporter.AppState) {
 	e.state = state
 	reporter.SetAppState(e.displayName, state)
+}
+
+func (e *manager) setPID(pid int) {
+	reporter.SetAppPID(e.displayName, pid)
 }
 
 // Manage is the main loop for the zone.
@@ -114,14 +118,16 @@ func poll(displayName string, path string, exeName string, args ...string) {
 		mgr.lastStartTime = time.Now()
 		go run.Start(mgr.ctx)
 		mgr.setState(reporter.AppStateStarting)
+		mgr.setPID(run.PID())
 
-		parse(mgr)
+		parse(mgr, run)
 	}
 }
 
-func parse(mgr *manager) {
+func parse(mgr *manager, run *runner.ProcessRunner) {
 	start := time.Now()
 	for {
+		mgr.setPID(run.PID())
 		select {
 		case line := <-mgr.outChan:
 			mgr.lineParse(line)

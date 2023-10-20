@@ -76,7 +76,7 @@ build-%-linux:
 
 build-%-windows:
 	@echo "build-$*-windows: ${VERSION}"
-	@cd $* && GOOS=windows GOARCH=amd64 go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -s -w" -o ../bin/$*.exe
+	@cd $* && GOOS=windows GOARCH=amd64 go build-ldflags -H=windowsgui -buildmode=pie -ldflags="-X main.Version=${VERSION} -s -w" -o ../bin/$*.exe
 	cd bin && zip -r overseer-windows-${VERSION}.zip $*.exe
 	@rm bin/$*.exe
 

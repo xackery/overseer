@@ -2,7 +2,7 @@ package dashboard
 
 import (
 	"github.com/charmbracelet/lipgloss"
-	"github.com/xackery/overseer/pkg/reporter"
+	"github.com/xackery/overseer/share/reporter"
 )
 
 var (

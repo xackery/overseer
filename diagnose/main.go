@@ -1,14 +1,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/erikgeiser/promptkit/confirmation"
 	"github.com/xackery/overseer/diagnose/check"
 	"github.com/xackery/overseer/diagnose/deep"
-	"github.com/xackery/overseer/pkg/config"
-	"github.com/xackery/overseer/pkg/message"
-	"github.com/xackery/overseer/pkg/operation"
+	"github.com/xackery/overseer/share/config"
+	"github.com/xackery/overseer/share/gui"
+	"github.com/xackery/overseer/share/message"
+	"github.com/xackery/overseer/share/operation"
 )
 
 var (
@@ -27,6 +29,16 @@ func main() {
 
 func run() error {
 	var err error
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	g, err := NewMainWindow(ctx, cancel, Version)
+	if err != nil {
+		return fmt.Errorf("new main window: %w", err)
+	}
+	gui.New(g)
+
 	cfg, err := config.LoadOverseerConfig("overseer.ini")
 	if err != nil {
 		return fmt.Errorf("load overseer config: %w", err)

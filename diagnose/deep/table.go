@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/xackery/overseer/pkg/config"
-	"github.com/xackery/overseer/pkg/connect"
-	"github.com/xackery/overseer/pkg/message"
+	"github.com/xackery/overseer/lib/connect"
+	"github.com/xackery/overseer/share/config"
+	"github.com/xackery/overseer/share/message"
 )
 
 // Table runs a deep diagnostic on the server's tables

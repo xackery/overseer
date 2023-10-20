@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/xackery/overseer/pkg/config"
-	"github.com/xackery/overseer/pkg/message"
+	"github.com/xackery/overseer/share/config"
+	"github.com/xackery/overseer/share/message"
 )
 
 func eqemuConfig() error {

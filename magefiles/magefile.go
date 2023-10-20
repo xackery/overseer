@@ -34,7 +34,11 @@ func Build(target string) error {
 		return fmt.Errorf("Error changing directory: %v", err)
 	}
 
-	cmd := "build -o ../bin/" + target + winExt + " ."
+	hFlag := ""
+	if runtime.GOOS == "windows" {
+		hFlag = "" //"-ldflags -H=windowsgui "
+	}
+	cmd := fmt.Sprintf("build %s-o ../bin/%s%s .", hFlag, target, winExt)
 	fmt.Println("Running: go " + cmd)
 	err = sh.Run("go", strings.Split(cmd, " ")...)
 	if err != nil {

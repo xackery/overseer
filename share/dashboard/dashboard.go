@@ -7,9 +7,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/xackery/overseer/pkg/flog"
-	"github.com/xackery/overseer/pkg/reporter"
-	"github.com/xackery/overseer/pkg/signal"
+	"github.com/xackery/overseer/share/flog"
+	"github.com/xackery/overseer/share/reporter"
+	"github.com/xackery/overseer/share/signal"
 	"golang.org/x/term"
 )
 

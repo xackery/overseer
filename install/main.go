@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/erikgeiser/promptkit/confirmation"
-	"github.com/xackery/overseer/pkg/config"
-	"github.com/xackery/overseer/pkg/download"
-	"github.com/xackery/overseer/pkg/message"
-	"github.com/xackery/overseer/pkg/operation"
-	"github.com/xackery/overseer/pkg/zip"
+	"github.com/xackery/overseer/lib/download"
+	"github.com/xackery/overseer/share/config"
+	"github.com/xackery/overseer/share/message"
+	"github.com/xackery/overseer/share/operation"
+	"github.com/xackery/overseer/share/zip"
 )
 
 var (

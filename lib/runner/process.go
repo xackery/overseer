@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/xackery/overseer/pkg/flog"
+	"github.com/xackery/overseer/share/flog"
 )
 
 // Runner handles running and polling output of a process
@@ -89,4 +89,14 @@ func (r *ProcessRunner) Stop() error {
 	}
 
 	return nil
+}
+
+func (r *ProcessRunner) PID() int {
+	if r.cmd == nil {
+		return 0
+	}
+	if r.cmd.Process == nil {
+		return 0
+	}
+	return r.cmd.Process.Pid
 }

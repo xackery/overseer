@@ -3,7 +3,7 @@ package check
 import (
 	"os"
 
-	"github.com/xackery/overseer/pkg/config"
+	"github.com/xackery/overseer/share/config"
 )
 
 // IsQuestInstalled checks if quest is installed
