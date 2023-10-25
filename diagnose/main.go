@@ -7,10 +7,10 @@ import (
 	"github.com/erikgeiser/promptkit/confirmation"
 	"github.com/xackery/overseer/diagnose/check"
 	"github.com/xackery/overseer/diagnose/deep"
-	"github.com/xackery/overseer/share/config"
-	"github.com/xackery/overseer/share/gui"
-	"github.com/xackery/overseer/share/message"
-	"github.com/xackery/overseer/share/operation"
+	"github.com/xackery/overseer/pkg/config"
+	"github.com/xackery/overseer/pkg/gui"
+	"github.com/xackery/overseer/pkg/message"
+	"github.com/xackery/overseer/pkg/operation"
 )
 
 var (

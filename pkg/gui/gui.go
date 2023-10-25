@@ -7,8 +7,6 @@ var (
 // GuiWrapper is a wrapper for gui functions
 type GuiWrapper interface {
 	Run() int
-	Logf(format string, a ...interface{})
-	LogClear()
 	Close() error
 	SetTitle(title string)
 }
@@ -23,21 +21,6 @@ func Run() int {
 		return 1
 	}
 	return gui.Run()
-}
-
-// Logf logs a message to the gui
-func Logf(format string, a ...interface{}) {
-	if gui == nil {
-		return
-	}
-	gui.Logf(format, a...)
-}
-
-func LogClear() {
-	if gui == nil {
-		return
-	}
-	gui.LogClear()
 }
 
 func Close() error {

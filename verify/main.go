@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/xackery/overseer/share/config"
-	"github.com/xackery/overseer/share/message"
-	"github.com/xackery/overseer/share/operation"
+	"github.com/xackery/overseer/pkg/config"
+	"github.com/xackery/overseer/pkg/message"
+	"github.com/xackery/overseer/pkg/operation"
 	"github.com/xackery/overseer/verify/confirm"
 )
 

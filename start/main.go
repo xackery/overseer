@@ -13,10 +13,10 @@ import (
 	"github.com/erikgeiser/promptkit/confirmation"
 	"github.com/erikgeiser/promptkit/selection"
 	"github.com/shirou/gopsutil/v3/process"
-	"github.com/xackery/overseer/share/config"
-	"github.com/xackery/overseer/share/message"
-	"github.com/xackery/overseer/share/operation"
-	"github.com/xackery/overseer/share/sanity"
+	"github.com/xackery/overseer/pkg/config"
+	"github.com/xackery/overseer/pkg/message"
+	"github.com/xackery/overseer/pkg/operation"
+	"github.com/xackery/overseer/pkg/sanity"
 )
 
 var (

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/xackery/overseer/share/config"
-	"github.com/xackery/overseer/share/message"
+	"github.com/xackery/overseer/pkg/config"
+	"github.com/xackery/overseer/pkg/message"
 )
 
 func OverseerConfig() error {

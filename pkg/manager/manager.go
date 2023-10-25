@@ -8,11 +8,11 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"github.com/xackery/overseer/lib/runner"
-	"github.com/xackery/overseer/share/flog"
-	"github.com/xackery/overseer/share/message"
-	"github.com/xackery/overseer/share/reporter"
-	"github.com/xackery/overseer/share/signal"
+	"github.com/xackery/overseer/pkg/flog"
+	"github.com/xackery/overseer/pkg/message"
+	"github.com/xackery/overseer/pkg/reporter"
+	"github.com/xackery/overseer/pkg/runner"
+	"github.com/xackery/overseer/pkg/signal"
 )
 
 type manager struct {

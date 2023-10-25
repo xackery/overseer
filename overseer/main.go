@@ -9,18 +9,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lxn/walk"
-	"github.com/xackery/overseer/share/config"
-	"github.com/xackery/overseer/share/flog"
-	"github.com/xackery/overseer/share/gui"
-	"github.com/xackery/overseer/share/message"
-	"github.com/xackery/overseer/share/operation"
-	"github.com/xackery/overseer/share/signal"
+	"github.com/xackery/overseer/pkg/config"
+	"github.com/xackery/overseer/pkg/flog"
+	"github.com/xackery/overseer/pkg/gui"
+	"github.com/xackery/overseer/pkg/message"
+	"github.com/xackery/overseer/pkg/operation"
+	"github.com/xackery/overseer/pkg/signal"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/xackery/overseer/lib/manager"
-	"github.com/xackery/overseer/share/dashboard"
-	"github.com/xackery/overseer/share/reporter"
+	"github.com/xackery/overseer/pkg/dashboard"
+	"github.com/xackery/overseer/pkg/manager"
+	"github.com/xackery/overseer/pkg/reporter"
 )
 
 var (
@@ -85,62 +84,11 @@ func run() error {
 				p.Send(dashboard.RefreshRequest{})
 			}
 		}
-
 	}()
 
 	_, err = p.Run()
 	if err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func runWindows(ctx context.Context, g *Gui) error {
-	go func() {
-		for {
-			fmt.Println("listening")
-			select {
-			case <-ctx.Done():
-				return
-			case <-reporter.SendUpdateChan:
-			}
-
-			items := []*ProcessViewEntry{}
-			apps := reporter.AppPtr()
-			fmt.Println("Got update", len(apps))
-			for name, app := range apps {
-				if app == nil {
-					continue
-				}
-				items = append(items, &ProcessViewEntry{
-					Name:   name,
-					PID:    fmt.Sprintf("%d", app.PID),
-					Status: reporter.AppStateString(app.Status),
-					Uptime: app.Uptime(),
-				})
-			}
-
-			g.SetProcessViewItems(items)
-
-		}
-	}()
-	go func() {
-		<-ctx.Done()
-		fmt.Println("Doing clean up process...")
-		gui.SetTitle("Shutting down... Please wait, ensuring all processes are exiting!")
-		signal.Cancel()
-		signal.WaitWorker()
-		gui.Close()
-		walk.App().Exit(0)
-		fmt.Println("Done, exiting")
-		os.Exit(0)
-	}()
-
-	errCode := gui.Run()
-	if errCode != 0 {
-		fmt.Println("Failed to run:", errCode)
-		os.Exit(1)
 	}
 
 	return nil

@@ -3,7 +3,7 @@ package main
 import (
 	"sort"
 
-	"github.com/xackery/overseer/share/slog"
+	"github.com/xackery/overseer/pkg/slog"
 	"github.com/xackery/wlk/walk"
 )
 
@@ -55,14 +55,12 @@ func (m *ProcessView) Value(row, col int) interface{} {
 	case -1:
 		return nil
 	case 0:
-		return ""
-	case 1:
 		return item.Name
-	case 2:
+	case 1:
 		return item.PID
-	case 3:
+	case 2:
 		return item.Status
-	case 4:
+	case 3:
 		return item.Uptime
 	}
 
@@ -103,12 +101,10 @@ func (m *ProcessView) Sort(col int, order walk.SortOrder) error {
 		case 0:
 			return c(a.Name < b.Name)
 		case 1:
-			return c(a.Name < b.Name)
-		case 2:
 			return c(a.PID < b.PID)
-		case 3:
+		case 2:
 			return c(a.Status < b.Status)
-		case 4:
+		case 3:
 			return c(a.Uptime < b.Uptime)
 		}
 
@@ -119,6 +115,7 @@ func (m *ProcessView) Sort(col int, order walk.SortOrder) error {
 	return m.SorterBase.Sort(col, order)
 }
 
+// ResetRows clears all rows
 func (m *ProcessView) ResetRows() {
 	m.items = nil
 

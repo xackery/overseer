@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/xackery/overseer/share/config"
+	"github.com/xackery/overseer/pkg/config"
 )
 
 func DB(emuCfg *config.EQEmuConfiguration) (*sql.DB, error) {

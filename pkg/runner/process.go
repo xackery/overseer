@@ -7,8 +7,9 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 
-	"github.com/xackery/overseer/share/flog"
+	"github.com/xackery/overseer/pkg/flog"
 )
 
 // Runner handles running and polling output of a process
@@ -61,6 +62,9 @@ func (r *ProcessRunner) run() error {
 			r.outChan <- scanner.Text()
 		}
 	}()
+
+	// don't pop up window for new process
+	r.cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 
 	flog.Printf("Runner start process %s\n", r.name)
 	err = r.cmd.Start()

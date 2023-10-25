@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/xackery/overseer/share/message"
-	"github.com/xackery/overseer/share/operation"
+	"github.com/xackery/overseer/pkg/message"
+	"github.com/xackery/overseer/pkg/operation"
 )
 
 var (

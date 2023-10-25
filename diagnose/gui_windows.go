@@ -82,7 +82,7 @@ func (g *Gui) Run() int {
 	return g.mw.Run()
 }
 
-func (g *Gui) SubscribeClose(fn func(cancelled *bool, reason walk.CloseReason)) {
+func (g *Gui) SubscribeClose(fn func(cancelled *bool, reason byte)) {
 	if g.mw == nil {
 		return
 	}
@@ -100,13 +100,6 @@ func (g *Gui) Logf(format string, a ...interface{}) {
 		line = line[0:strings.Index(line, "\n")]
 	}
 	g.statusBar.SetText(line)
-}
-
-func (g *Gui) LogClear() {
-	if g.mw == nil {
-		return
-	}
-	g.statusBar.SetText("")
 }
 
 func (g *Gui) Close() error {

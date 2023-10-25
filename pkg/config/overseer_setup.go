@@ -8,8 +8,8 @@ import (
 
 	"github.com/erikgeiser/promptkit/confirmation"
 	"github.com/erikgeiser/promptkit/selection"
-	"github.com/xackery/overseer/lib/service"
-	"github.com/xackery/overseer/share/message"
+	"github.com/xackery/overseer/pkg/message"
+	"github.com/xackery/overseer/pkg/service"
 )
 
 func overseerSetup() (*OverseerConfiguration, error) {

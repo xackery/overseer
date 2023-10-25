@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/xackery/overseer/share/gui"
+	"github.com/xackery/overseer/pkg/slog"
 )
 
 var (
@@ -35,7 +35,7 @@ func Badf(format string, a ...interface{}) {
 		Foreground(lipgloss.AdaptiveColor{Light: "#FF5555", Dark: "#FF5555"}).
 		PaddingRight(1).
 		String()+format, a...)
-	gui.Logf(format, a...)
+	slog.Printf(format, a...)
 	isOK = false
 }
 
