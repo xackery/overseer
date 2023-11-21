@@ -31,6 +31,7 @@ type manager struct {
 	errorCount    int // When errorCount hits 3, set errorCooldown to 30 minutes
 	doneChan      chan error
 	outChan       chan string
+	isOverseerLog bool // false if config is not set
 }
 
 type SetupType int
@@ -50,8 +51,8 @@ func (e *manager) setPID(pid int) {
 }
 
 // Manage is the main loop for the zone.
-func Manage(setup SetupType, displayName string, path string, exeName string, args ...string) {
-	go poll(displayName, path, exeName, args...)
+func Manage(setup SetupType, displayName string, isLogged bool, path string, exeName string, args ...string) {
+	go poll(displayName, path, isLogged, exeName, args...)
 }
 
 func InitializeDockerNetwork(networkName string) error {
@@ -90,7 +91,7 @@ func InitializeDockerNetwork(networkName string) error {
 	return nil
 }
 
-func poll(displayName string, path string, exeName string, args ...string) {
+func poll(displayName string, path string, isLogged bool, exeName string, args ...string) {
 	signal.AddWorker()
 	defer signal.FinishWorker()
 
@@ -130,6 +131,9 @@ func parse(mgr *manager, run *runner.ProcessRunner) {
 		mgr.setPID(run.PID())
 		select {
 		case line := <-mgr.outChan:
+			if !mgr.isOverseerLog {
+				return
+			}
 			mgr.lineParse(line)
 
 			flog.Printf("[%s] Manager line: %s\n", mgr.displayName, line)

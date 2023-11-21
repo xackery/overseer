@@ -131,19 +131,19 @@ func parseManager(cfg *config.OverseerConfiguration) error {
 	}
 
 	for i := 0; i < cfg.ZoneCount; i++ {
-		manager.Manage(setupType, fmt.Sprintf("zone%d", i), dir, command)
+		manager.Manage(setupType, fmt.Sprintf("zone%d", i), cfg.IsOverseerVerboseLog, dir, command)
 	}
 
 	command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/world"+winExt)
 	if err != nil {
 		return fmt.Errorf("rel: %w", err)
 	}
-	manager.Manage(setupType, "world", dir, command)
+	manager.Manage(setupType, "world", cfg.IsOverseerVerboseLog, dir, command)
 	command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/ucs"+winExt)
 	if err != nil {
 		return fmt.Errorf("rel: %w", err)
 	}
-	manager.Manage(setupType, "ucs", dir, command)
+	manager.Manage(setupType, "ucs", cfg.IsOverseerVerboseLog, dir, command)
 	//command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/queryserv"+winExt)
 	//if err != nil {
 	//	return fmt.Errorf("rel: %w", err)
@@ -161,7 +161,7 @@ func parseManager(cfg *config.OverseerConfiguration) error {
 		if err != nil {
 			return fmt.Errorf("rel: %w", err)
 		}
-		manager.Manage(setupType, nonExt, dir, command)
+		manager.Manage(setupType, nonExt, cfg.IsOverseerVerboseLog, dir, command)
 	}
 	return nil
 }

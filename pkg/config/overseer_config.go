@@ -15,12 +15,13 @@ type OverseerConfiguration struct {
 	// Setup represents the setup type, options include default (bare-metal), docker (docker run), docker-compose (akk-stack)
 	Setup string
 	// If setup is docker, this is the network to use, defaults to eqemu
-	DockerNetwork    string
-	Expansion        string
-	PortableDatabase int
-	AutoUpdate       int
-	Apps             []string
-	IsScreenStart    bool
+	DockerNetwork        string
+	Expansion            string
+	PortableDatabase     int
+	AutoUpdate           int
+	Apps                 []string
+	IsScreenStart        bool
+	IsOverseerVerboseLog bool
 }
 
 // LoadOverseerConfig loads an overseer config file
@@ -112,6 +113,17 @@ func LoadOverseerConfig(path string) (*OverseerConfiguration, error) {
 				}
 				if val == 1 {
 					config.IsScreenStart = true
+				}
+			case "is_overseer_verbose_log":
+				val, err := strconv.Atoi(value)
+				if err != nil {
+					config.IsOverseerVerboseLog = false
+					if strings.EqualFold(value, "true") {
+						config.IsOverseerVerboseLog = true
+					}
+				}
+				if val == 1 {
+					config.IsOverseerVerboseLog = true
 				}
 			default:
 				return nil, fmt.Errorf("unknown key in overseer.ini: %s", key)
@@ -292,6 +304,19 @@ func (c *OverseerConfiguration) Save() error {
 			out += fmt.Sprintf("%s = %d\n", key, val)
 			tmpConfig.IsScreenStart = true
 			continue
+		case "is_overseer_verbose_log":
+			if tmpConfig.IsOverseerVerboseLog {
+				continue
+			}
+
+			val := 0
+			if c.IsOverseerVerboseLog {
+				val = 1
+			}
+
+			out += fmt.Sprintf("%s = %d\n", key, val)
+			tmpConfig.IsOverseerVerboseLog = true
+			continue
 		}
 		line = fmt.Sprintf("%s = %s", key, value)
 		out += line + "\n"
@@ -322,11 +347,18 @@ func (c *OverseerConfiguration) Save() error {
 	if tmpConfig.AutoUpdate == 0 {
 		out += fmt.Sprintf("auto_update = %d\n", c.AutoUpdate)
 	}
+
 	val := 0
 	if tmpConfig.IsScreenStart {
 		val = 1
 	}
 	out += fmt.Sprintf("is_screen_start = %d\n", val)
+
+	val = 0
+	if tmpConfig.IsOverseerVerboseLog {
+		val = 1
+	}
+	out += fmt.Sprintf("is_overseer_verbose_log = %d\n", val)
 
 	err = os.WriteFile("overseer.ini", []byte(out), 0644)
 	if err != nil {
