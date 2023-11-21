@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 
 	"github.com/xackery/overseer/pkg/flog"
 )
@@ -64,7 +63,7 @@ func (r *ProcessRunner) run() error {
 	}()
 
 	// don't pop up window for new process
-	r.cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	r.cmd.SysProcAttr = newProcAttr()
 
 	flog.Printf("Runner start process %s\n", r.name)
 	err = r.cmd.Start()

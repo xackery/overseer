@@ -11,6 +11,11 @@ run-%:
 	@cd $* && go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -s -w" -o ../bin/$*
 	cd bin && ./$*
 
+windows-run-%:
+	@echo "windows-run-$*: running..."
+	@cd $* && GOOS=windows go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -s -w" -o ../bin/$*.exe
+	cd bin && wine $*.exe
+
 # build for local OS
 build:
 	cd overseer && go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -s -w" -o ../bin/overseer main.go
