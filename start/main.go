@@ -75,8 +75,34 @@ func run() error {
 		}
 	}
 
+	fi, err := os.Stat(cwd + "/" + cfg.ServerPath)
+	if err == nil {
+		cfg.ServerPath = cwd + "/" + cfg.ServerPath
+	} else {
+		fi, err = os.Stat(cfg.ServerPath)
+		if err != nil {
+			return fmt.Errorf("stat: %w", err)
+		}
+	}
+	if !fi.IsDir() {
+		return fmt.Errorf("server path is not a directory")
+	}
+
+	fi, err = os.Stat(cwd + "/" + cfg.BinPath)
+	if err == nil {
+		cfg.BinPath = cwd + "/" + cfg.BinPath
+	} else {
+		fi, err = os.Stat(cfg.BinPath)
+		if err != nil {
+			return fmt.Errorf("stat: %w", err)
+		}
+	}
+	if !fi.IsDir() {
+		return fmt.Errorf("bin path is not a directory")
+	}
+
 	choice := command
-	dir, err := filepath.Abs(cwd + "/" + cfg.ServerPath)
+	dir, err := filepath.Abs(cfg.ServerPath)
 	if err != nil {
 		return fmt.Errorf("abs: %w", err)
 	}

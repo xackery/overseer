@@ -120,12 +120,38 @@ func parseManager(cfg *config.OverseerConfiguration) error {
 		return fmt.Errorf("getwd: %w", err)
 	}
 
-	dir, err := filepath.Abs(cwd + "/" + cfg.ServerPath)
+	fi, err := os.Stat(cwd + "/" + cfg.ServerPath)
+	if err == nil {
+		cfg.ServerPath = cwd + "/" + cfg.ServerPath
+	} else {
+		fi, err = os.Stat(cfg.ServerPath)
+		if err != nil {
+			return fmt.Errorf("stat: %w", err)
+		}
+	}
+	if !fi.IsDir() {
+		return fmt.Errorf("server path is not a directory")
+	}
+
+	fi, err = os.Stat(cwd + "/" + cfg.BinPath)
+	if err == nil {
+		cfg.BinPath = cwd + "/" + cfg.BinPath
+	} else {
+		fi, err = os.Stat(cfg.BinPath)
+		if err != nil {
+			return fmt.Errorf("stat: %w", err)
+		}
+	}
+	if !fi.IsDir() {
+		return fmt.Errorf("bin path is not a directory")
+	}
+
+	dir, err := filepath.Abs(cfg.ServerPath)
 	if err != nil {
 		return fmt.Errorf("abs: %w", err)
 	}
 
-	command, err := filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/zone"+winExt)
+	command, err := filepath.Rel(dir, cfg.BinPath+"/zone"+winExt)
 	if err != nil {
 		return fmt.Errorf("rel: %w", err)
 	}
@@ -134,22 +160,22 @@ func parseManager(cfg *config.OverseerConfiguration) error {
 		manager.Manage(setupType, fmt.Sprintf("zone%d", i), cfg.IsOverseerVerboseLog, dir, command)
 	}
 
-	command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/world"+winExt)
+	command, err = filepath.Rel(dir, cfg.BinPath+"/world"+winExt)
 	if err != nil {
 		return fmt.Errorf("rel: %w", err)
 	}
 	manager.Manage(setupType, "world", cfg.IsOverseerVerboseLog, dir, command)
-	command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/ucs"+winExt)
+	command, err = filepath.Rel(dir, cfg.BinPath+"/ucs"+winExt)
 	if err != nil {
 		return fmt.Errorf("rel: %w", err)
 	}
 	manager.Manage(setupType, "ucs", cfg.IsOverseerVerboseLog, dir, command)
-	//command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/queryserv"+winExt)
+	//command, err = filepath.Rel(dir, cfg.BinPath+"/queryserv"+winExt)
 	//if err != nil {
 	//	return fmt.Errorf("rel: %w", err)
 	//}
 	//manager.Manage(setupType, "queryserv", dir, command)
-	//command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/loginserver"+winExt)
+	//command, err = filepath.Rel(dir, cfg.BinPath+"/loginserver"+winExt)
 	//if err != nil {
 	//	return fmt.Errorf("rel: %w", err)
 	//}
@@ -157,7 +183,7 @@ func parseManager(cfg *config.OverseerConfiguration) error {
 
 	for _, app := range cfg.Apps {
 		nonExt := strings.TrimSuffix(app, filepath.Ext(app))
-		command, err = filepath.Rel(dir, cwd+"/"+cfg.BinPath+"/"+app)
+		command, err = filepath.Rel(dir, cfg.BinPath+"/"+app)
 		if err != nil {
 			return fmt.Errorf("rel: %w", err)
 		}

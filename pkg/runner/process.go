@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/xackery/overseer/pkg/flog"
@@ -37,10 +38,15 @@ func (r *ProcessRunner) Start(ctx context.Context) {
 		return
 	}
 
-	flog.Printf("Runner exec Starting process '%s %s' from path %s\n", r.name, strings.Join(r.args, " "), r.path)
+	absPath, err := filepath.Abs(r.path)
+	if err != nil {
+		absPath = r.path
+	}
+
+	flog.Printf("Runner exec Starting process '%s %s' from path %s\n", r.name, strings.Join(r.args, " "), absPath)
 	r.cmd = exec.CommandContext(ctx, r.name, r.args...)
 	r.cmd.Dir = r.path
-	err := r.run()
+	err = r.run()
 	r.cmd = nil
 	flog.Printf("Runner %s finished with error: %s\n", r.name, err)
 	r.doneChan <- err
