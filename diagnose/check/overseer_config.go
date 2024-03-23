@@ -52,7 +52,7 @@ func OverseerConfig() error {
 			case "zone_count":
 				cfg.ZoneCount, err = strconv.Atoi(value)
 				if err != nil {
-					message.Badf("parse zone_count value %s: %w", value, err)
+					message.Badf("parse zone_count value %s: %s", value, err)
 				}
 				tmpConfig.ZoneCount = 1
 			case "setup":
@@ -71,7 +71,7 @@ func OverseerConfig() error {
 			case "auto_update":
 				cfg.AutoUpdate, err = strconv.Atoi(value)
 				if err != nil {
-					message.Badf("parse auto_update value %s: %w", value, err)
+					message.Badf("parse auto_update value %s: %s", value, err)
 				}
 				if cfg.AutoUpdate != 0 && cfg.AutoUpdate != 1 {
 					message.Badf("overseer.ini unknown auto_update value %s", value)
@@ -80,7 +80,7 @@ func OverseerConfig() error {
 			case "portable_database":
 				cfg.PortableDatabase, err = strconv.Atoi(value)
 				if err != nil {
-					message.Badf("parse portable_database value %s: %w", value, err)
+					message.Badf("parse portable_database value %s: %s", value, err)
 				}
 				if cfg.PortableDatabase != 0 && cfg.PortableDatabase != 1 {
 					message.Badf("overseer.ini unknown portable_database value %s", value)
