@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"strings"
 
 	"github.com/xackery/overseer/pkg/flog"
 )
@@ -16,17 +14,19 @@ import (
 type ProcessRunner struct {
 	outChan  chan (string)
 	doneChan chan (error)
-	path     string
+	wdPath   string
+	exePath  string
 	name     string
 	args     []string
 	cmd      *exec.Cmd
 }
 
-func NewProcess(outChan chan (string), doneChan chan (error), path string, name string, args ...string) *ProcessRunner {
+func NewProcess(outChan chan (string), doneChan chan (error), wdPath string, exePath string, name string, args ...string) *ProcessRunner {
 	return &ProcessRunner{
 		outChan:  outChan,
 		doneChan: doneChan,
-		path:     path,
+		wdPath:   wdPath,
+		exePath:  exePath,
 		name:     name,
 		args:     args,
 	}
@@ -38,15 +38,16 @@ func (r *ProcessRunner) Start(ctx context.Context) {
 		return
 	}
 
-	absPath, err := filepath.Abs(r.path)
-	if err != nil {
-		absPath = r.path
+	fullCmd := r.name
+	for _, arg := range r.args {
+		fullCmd += " " + arg
 	}
 
-	flog.Printf("Runner exec Starting process '%s %s' from path %s\n", r.name, strings.Join(r.args, " "), absPath)
-	r.cmd = exec.CommandContext(ctx, r.name, r.args...)
-	r.cmd.Dir = r.path
-	err = r.run()
+	flog.Printf("Runner exec wdPath: '%s', exePath: '%s', exeCommand: '%s'\n", r.wdPath, r.exePath, fullCmd)
+	r.cmd = exec.CommandContext(ctx, r.exePath+"/"+r.name, r.args...)
+
+	r.cmd.Dir = r.wdPath
+	err := r.run()
 	r.cmd = nil
 	flog.Printf("Runner %s finished with error: %s\n", r.name, err)
 	r.doneChan <- err
@@ -74,7 +75,7 @@ func (r *ProcessRunner) run() error {
 	flog.Printf("Runner start process %s\n", r.name)
 	err = r.cmd.Start()
 	if err != nil {
-		return fmt.Errorf("start: %w", err)
+		return fmt.Errorf("start %+v: %w", r.cmd, err)
 	}
 
 	flog.Printf("Runner wait process %s\n", r.name)

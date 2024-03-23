@@ -146,48 +146,42 @@ func parseManager(cfg *config.OverseerConfiguration) error {
 		return fmt.Errorf("bin path is not a directory")
 	}
 
-	dir, err := filepath.Abs(cfg.ServerPath)
+	wdPath, err := filepath.Abs(cfg.ServerPath)
 	if err != nil {
-		return fmt.Errorf("abs: %w", err)
+		return fmt.Errorf("abs wdPath: %w", err)
 	}
 
-	command, err := filepath.Rel(dir, cfg.BinPath+"/zone"+winExt)
+	exePath, err := filepath.Abs(cfg.BinPath)
 	if err != nil {
-		return fmt.Errorf("rel: %w", err)
+		return fmt.Errorf("abs exePath: %w", err)
 	}
 
 	for i := 0; i < cfg.ZoneCount; i++ {
-		manager.Manage(setupType, fmt.Sprintf("zone%d", i), cfg.IsOverseerVerboseLog, dir, command)
+		err = manager.Manage(setupType, fmt.Sprintf("zone%d", i), cfg.IsOverseerVerboseLog, wdPath, exePath, "zone"+winExt)
+		if err != nil {
+			return fmt.Errorf("manage zone%d: %w", i, err)
+		}
 	}
 
-	command, err = filepath.Rel(dir, cfg.BinPath+"/world"+winExt)
+	err = manager.Manage(setupType, "world", cfg.IsOverseerVerboseLog, wdPath, exePath, "world"+winExt)
 	if err != nil {
-		return fmt.Errorf("rel: %w", err)
+		return fmt.Errorf("manage world: %w", err)
 	}
-	manager.Manage(setupType, "world", cfg.IsOverseerVerboseLog, dir, command)
-	command, err = filepath.Rel(dir, cfg.BinPath+"/ucs"+winExt)
+
+	err = manager.Manage(setupType, "ucs", cfg.IsOverseerVerboseLog, wdPath, exePath, "ucs"+winExt)
 	if err != nil {
-		return fmt.Errorf("rel: %w", err)
+		return fmt.Errorf("manage ucs: %w", err)
 	}
-	manager.Manage(setupType, "ucs", cfg.IsOverseerVerboseLog, dir, command)
-	//command, err = filepath.Rel(dir, cfg.BinPath+"/queryserv"+winExt)
-	//if err != nil {
-	//	return fmt.Errorf("rel: %w", err)
-	//}
-	//manager.Manage(setupType, "queryserv", dir, command)
-	//command, err = filepath.Rel(dir, cfg.BinPath+"/loginserver"+winExt)
-	//if err != nil {
-	//	return fmt.Errorf("rel: %w", err)
-	//}
-	//manager.Manage(setupType, "loginserver", dir, command)
+	//manager.Manage(setupType, "queryserv", wdPath, exePath, "queryserv"+winExt)
+	//manager.Manage(setupType, "loginserver", wdPath, exePath, "loginserver"+winExt)
 
 	for _, app := range cfg.Apps {
 		nonExt := strings.TrimSuffix(app, filepath.Ext(app))
-		command, err = filepath.Rel(dir, cfg.BinPath+"/"+app)
+		err = manager.Manage(setupType, nonExt, cfg.IsOverseerVerboseLog, wdPath, exePath, app)
 		if err != nil {
-			return fmt.Errorf("rel: %w", err)
+			return fmt.Errorf("manage %s: %w", nonExt, err)
 		}
-		manager.Manage(setupType, nonExt, cfg.IsOverseerVerboseLog, dir, command)
+
 	}
 	return nil
 }

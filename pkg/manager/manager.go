@@ -3,6 +3,7 @@ package manager
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -18,7 +19,8 @@ import (
 type manager struct {
 	ctx           context.Context
 	displayName   string
-	path          string
+	wdPath        string
+	exePath       string
 	exeName       string
 	args          []string
 	startDelay    time.Duration
@@ -51,8 +53,17 @@ func (e *manager) setPID(pid int) {
 }
 
 // Manage is the main loop for the zone.
-func Manage(setup SetupType, displayName string, isLogged bool, path string, exeName string, args ...string) {
-	go poll(displayName, path, isLogged, exeName, args...)
+func Manage(setup SetupType, displayName string, isLogged bool, wdPath string, exePath string, exeName string, args ...string) error {
+	fi, err := os.Stat(exePath + "/" + exeName)
+	if err != nil {
+		return fmt.Errorf("stat %s: %w", exePath+"/"+exeName, err)
+	}
+	if fi.IsDir() {
+		return fmt.Errorf("%s is a directory", exeName)
+	}
+
+	go poll(displayName, wdPath, exePath, isLogged, exeName, args...)
+	return nil
 }
 
 func InitializeDockerNetwork(networkName string) error {
@@ -91,14 +102,15 @@ func InitializeDockerNetwork(networkName string) error {
 	return nil
 }
 
-func poll(displayName string, path string, isLogged bool, exeName string, args ...string) {
+func poll(displayName string, wdPath string, exePath string, isLogged bool, exeName string, args ...string) {
 	signal.AddWorker()
 	defer signal.FinishWorker()
 
 	mgr := &manager{
 		ctx:         signal.Ctx(),
 		displayName: displayName,
-		path:        path,
+		wdPath:      wdPath,
+		exePath:     exePath,
 		exeName:     exeName,
 		args:        args,
 		outChan:     make(chan string),
@@ -106,7 +118,7 @@ func poll(displayName string, path string, isLogged bool, exeName string, args .
 		doneChan:    make(chan error),
 	}
 
-	run := runner.NewProcess(mgr.outChan, mgr.doneChan, mgr.path, mgr.exeName, mgr.args...)
+	run := runner.NewProcess(mgr.outChan, mgr.doneChan, mgr.wdPath, mgr.exePath, mgr.exeName, mgr.args...)
 	for {
 		select {
 		case <-mgr.ctx.Done():

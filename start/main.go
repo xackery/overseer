@@ -217,7 +217,7 @@ func run() error {
 	if isScreen {
 		err = cmd.Start()
 		if err != nil {
-			return fmt.Errorf("start %s: %w", command, err)
+			return fmt.Errorf("start %s %+v: %w", command, cmd, err)
 		}
 		message.OK("Screen of overseer started. You can use `screen -r overseer` to view it.")
 		return nil
