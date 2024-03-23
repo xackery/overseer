@@ -1,8 +1,5 @@
 name: Build Go Binaries and Prep Release
-on:
-  push:
-    branches:
-      - main
+on: [push]
 jobs:
   build_and_preview:
     runs-on: ubuntu-latest
@@ -20,6 +17,5 @@ jobs:
           prerelease: false
           title: "${{env.VERSION}}"
           files: |
-            bin/overseer-darwin-${{env.VERSION}}.zip
             bin/overseer-linux-${{env.VERSION}}.zip
             bin/overseer-windows-${{env.VERSION}}.zip

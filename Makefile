@@ -63,15 +63,8 @@ build-all:
 	make build-all-verify
 
 build-all-%:
-	make build-$*-darwin
 	make build-$*-windows 
 	make build-$*-linux
-
-build-%-darwin:
-	@echo "build-$*-darwin: ${VERSION}"
-	@cd $* && GOOS=darwin GOARCH=amd64 go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -s -w" -o ../bin/$*
-	cd bin && zip -r overseer-darwin-${VERSION}.zip $*
-	@rm bin/$*
 
 build-%-linux:
 	@echo "build-$*-linux: ${VERSION}"
@@ -81,14 +74,9 @@ build-%-linux:
 
 build-%-windows:
 	@echo "build-$*-windows: ${VERSION}"
-	@cd $* && GOOS=windows GOARCH=amd64 go build-ldflags -H=windowsgui -buildmode=pie -ldflags="-X main.Version=${VERSION} -s -w" -o ../bin/$*.exe
+	@cd $* && GOOS=windows GOARCH=amd64 go build -ldflags -H=windowsgui -buildmode=pie -ldflags="-X main.Version=${VERSION} -s -w" -o ../bin/$*.exe
 	cd bin && zip -r overseer-windows-${VERSION}.zip $*.exe
 	@rm bin/$*.exe
-
-# used by xackery, build darwin copy and move to blender path
-build-copy: build-darwin
-	@echo "copying to ${NAME}-addons..."
-	cp bin/${NAME}-darwin "/Users/xackery/Library/Application Support/Blender/3.4/scripts/addons/${NAME}-addon/${NAME}-darwin"
 
 # run pprof and dump 3 snapshots of heap
 profile-heap:
