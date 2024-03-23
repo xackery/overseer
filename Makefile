@@ -69,13 +69,13 @@ build-all-%:
 build-%-linux:
 	@echo "build-$*-linux: ${VERSION}"
 	@cd $* && GOOS=linux GOARCH=amd64 go build -ldflags="-X main.Version=${VERSION} -s -w" -o ../bin/$*
-	cd bin && zip -r overseer-linux-${VERSION}.zip $*
+	cd bin && zip -r overseer-linux.zip $*
 	@rm bin/$*
 
 build-%-windows:
 	@echo "build-$*-windows: ${VERSION}"
 	@cd $* && GOOS=windows GOARCH=amd64 go build -ldflags -H=windowsgui -buildmode=pie -ldflags="-X main.Version=${VERSION} -s -w" -o ../bin/$*.exe
-	cd bin && zip -r overseer-windows-${VERSION}.zip $*.exe
+	cd bin && zip -r overseer-windows.zip $*.exe
 	@rm bin/$*.exe
 
 # run pprof and dump 3 snapshots of heap

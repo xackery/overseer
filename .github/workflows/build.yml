@@ -17,5 +17,5 @@ jobs:
           prerelease: false
           title: "${{env.VERSION}}"
           files: |
-            bin/overseer-linux-${{env.VERSION}}.zip
-            bin/overseer-windows-${{env.VERSION}}.zip
+            bin/overseer-linux.zip
+            bin/overseer-windows.zip
