@@ -57,16 +57,16 @@ func run() error {
 		return fmt.Errorf("load overseer config: %w", err)
 	}
 
-	err = parseManager(config)
-	if err != nil {
-		return fmt.Errorf("initialize manager: %w", err)
-	}
-
 	err = flog.New("overseer.log")
 	if err != nil {
 		return fmt.Errorf("new flog: %w", err)
 	}
 	defer flog.Close()
+
+	err = parseManager(config)
+	if err != nil {
+		return fmt.Errorf("initialize manager: %w", err)
+	}
 
 	if runtime.GOOS == "windows" {
 		return runWindows(ctx, g)
@@ -113,8 +113,6 @@ func parseManager(cfg *config.OverseerConfiguration) error {
 		setupType = manager.SetupDefault
 	}
 
-	flog.Printf("Setup type: %s\n", cfg.Setup)
-
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("getwd: %w", err)
@@ -156,24 +154,32 @@ func parseManager(cfg *config.OverseerConfiguration) error {
 		return fmt.Errorf("abs exePath: %w", err)
 	}
 
+	err = manager.Manage(setupType, "world", cfg.IsOverseerVerboseLog, wdPath, exePath, "world"+winExt)
+	if err != nil {
+		return fmt.Errorf("manage world: %w", err)
+	}
+	time.Sleep(50 * time.Millisecond)
+
 	for i := 0; i < cfg.ZoneCount; i++ {
 		err = manager.Manage(setupType, fmt.Sprintf("zone%d", i), cfg.IsOverseerVerboseLog, wdPath, exePath, "zone"+winExt)
 		if err != nil {
 			return fmt.Errorf("manage zone%d: %w", i, err)
 		}
+		time.Sleep(50 * time.Millisecond)
 	}
 
-	err = manager.Manage(setupType, "world", cfg.IsOverseerVerboseLog, wdPath, exePath, "world"+winExt)
-	if err != nil {
-		return fmt.Errorf("manage world: %w", err)
-	}
+	time.Sleep(50 * time.Millisecond)
 
 	err = manager.Manage(setupType, "ucs", cfg.IsOverseerVerboseLog, wdPath, exePath, "ucs"+winExt)
 	if err != nil {
 		return fmt.Errorf("manage ucs: %w", err)
 	}
+	time.Sleep(50 * time.Millisecond)
 	//manager.Manage(setupType, "queryserv", wdPath, exePath, "queryserv"+winExt)
+	//time.Sleep(50 * time.Millisecond)
+
 	//manager.Manage(setupType, "loginserver", wdPath, exePath, "loginserver"+winExt)
+	//	time.Sleep(50 * time.Millisecond)
 
 	for _, app := range cfg.Apps {
 		nonExt := strings.TrimSuffix(app, filepath.Ext(app))
@@ -181,7 +187,7 @@ func parseManager(cfg *config.OverseerConfiguration) error {
 		if err != nil {
 			return fmt.Errorf("manage %s: %w", nonExt, err)
 		}
-
+		time.Sleep(50 * time.Millisecond)
 	}
 	return nil
 }

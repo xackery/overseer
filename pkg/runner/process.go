@@ -12,29 +12,32 @@ import (
 
 // Runner handles running and polling output of a process
 type ProcessRunner struct {
-	outChan  chan (string)
-	doneChan chan (error)
-	wdPath   string
-	exePath  string
-	name     string
-	args     []string
-	cmd      *exec.Cmd
+	outChan     chan (string)
+	doneChan    chan (error)
+	displayName string
+	wdPath      string
+	exePath     string
+	name        string
+	args        []string
+	cmd         *exec.Cmd
 }
 
-func NewProcess(outChan chan (string), doneChan chan (error), wdPath string, exePath string, name string, args ...string) *ProcessRunner {
+func NewProcess(outChan chan (string), doneChan chan (error), displayName string, wdPath string, exePath string, name string, args ...string) *ProcessRunner {
 	return &ProcessRunner{
-		outChan:  outChan,
-		doneChan: doneChan,
-		wdPath:   wdPath,
-		exePath:  exePath,
-		name:     name,
-		args:     args,
+		outChan:     outChan,
+		doneChan:    doneChan,
+		displayName: displayName,
+		wdPath:      wdPath,
+		exePath:     exePath,
+		name:        name,
+		args:        args,
 	}
 }
 
+// Start starts the process
 func (r *ProcessRunner) Start(ctx context.Context) {
 	if r.cmd != nil {
-		flog.Printf("process %s already running\n", r.name)
+		flog.Printf("[runner][%s] already running\n", r.displayName)
 		return
 	}
 
@@ -43,13 +46,18 @@ func (r *ProcessRunner) Start(ctx context.Context) {
 		fullCmd += " " + arg
 	}
 
-	flog.Printf("Runner exec wdPath: '%s', exePath: '%s', exeCommand: '%s'\n", r.wdPath, r.exePath, fullCmd)
+	flog.Printf("[runner][%s] priming wdPath: '%s', exePath: '%s', exeCommand: '%s'\n", r.displayName, r.wdPath, r.exePath, fullCmd)
 	r.cmd = exec.CommandContext(ctx, r.exePath+"/"+r.name, r.args...)
 
 	r.cmd.Dir = r.wdPath
 	err := r.run()
+	if err != nil {
+		if err.Error() != "wait: signal: killed" {
+			flog.Printf("[runner][%s] finished with error: %s\n", r.displayName, err)
+		}
+	}
 	r.cmd = nil
-	flog.Printf("Runner %s finished with error: %s\n", r.name, err)
+	flog.Printf("[runner][%s] done\n", r.displayName)
 	r.doneChan <- err
 }
 
@@ -72,19 +80,19 @@ func (r *ProcessRunner) run() error {
 	// don't pop up window for new process
 	r.cmd.SysProcAttr = newProcAttr()
 
-	flog.Printf("Runner start process %s\n", r.name)
+	flog.Printf("[runner][%s] starting process\n", r.displayName)
 	err = r.cmd.Start()
 	if err != nil {
 		return fmt.Errorf("start %+v: %w", r.cmd, err)
 	}
 
-	flog.Printf("Runner wait process %s\n", r.name)
+	flog.Printf("[runner][%s] wait process\n", r.displayName)
 	err = r.cmd.Wait()
 	if err != nil {
 		return fmt.Errorf("wait: %w", err)
 	}
 
-	flog.Printf("Runner process %s self exit\n", r.name)
+	flog.Printf("[runner][%s] self exit\n", r.displayName)
 	return nil
 }
 
@@ -92,7 +100,7 @@ func (r *ProcessRunner) Stop() error {
 	if r.cmd == nil {
 		return nil
 	}
-	flog.Printf("Stopping process %s\n", r.name)
+	flog.Printf("[runner][%s] stopping\n", r.displayName)
 	err := r.cmd.Process.Signal(os.Interrupt)
 	if err != nil {
 		return fmt.Errorf("signal: %w", err)

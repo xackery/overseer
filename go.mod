@@ -12,6 +12,7 @@ require (
 	github.com/magefile/mage v1.15.0
 	github.com/shirou/gopsutil/v3 v3.23.9
 	github.com/xackery/wlk v0.0.10
+	github.com/ziutek/telnet v0.0.0-20180329124119-c3b780dc415b
 	golang.org/x/term v0.13.0
 )
 

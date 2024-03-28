@@ -10,6 +10,7 @@ import (
 	"github.com/xackery/overseer/pkg/flog"
 	"github.com/xackery/overseer/pkg/reporter"
 	"github.com/xackery/overseer/pkg/signal"
+	"github.com/xackery/overseer/pkg/telnet"
 	"golang.org/x/term"
 )
 
@@ -45,7 +46,7 @@ func New(version string) Dashboard {
 		e.stateOrdering = append(e.stateOrdering, builtin)
 	}
 
-	flog.Printf("Number of services tracked: %d\n", len(e.stateOrdering))
+	//flog.Printf("Number of services tracked: %d\n", len(e.stateOrdering))
 
 	for appName := range state.States {
 		isFound := false
@@ -78,7 +79,7 @@ func (e Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		// These keys should exit the program.
 		case "ctrl+c", "q":
-			flog.Println("Received ctrl+c or q, exiting")
+			flog.Println("[dashboard] received ctrl+c or q, exiting")
 			signal.Cancel()
 			signal.WaitWorker()
 			return e, tea.Quit
@@ -143,7 +144,9 @@ func (e Dashboard) View() string {
 			lipgloss.JoinVertical(
 				lipgloss.Left,
 				listHeader("Stats"),
-				renderIcon("👤", fmt.Sprintf("%d Online", 3)), // person emoji: 👤
+				renderIcon("👤", fmt.Sprintf("%d Online", telnet.OnlineCount())),         // person emoji: 👤
+				renderIcon("💪", fmt.Sprintf("%d Average Level", telnet.AvgLevel())),     // arm emoji: 💪
+				renderIcon("🛹", fmt.Sprintf("%s Popular Class", telnet.PopularClass())), // board emoji: 🛹
 			),
 		),
 	))

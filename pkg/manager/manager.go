@@ -118,11 +118,11 @@ func poll(displayName string, wdPath string, exePath string, isLogged bool, exeN
 		doneChan:    make(chan error),
 	}
 
-	run := runner.NewProcess(mgr.outChan, mgr.doneChan, mgr.wdPath, mgr.exePath, mgr.exeName, mgr.args...)
+	run := runner.NewProcess(mgr.outChan, mgr.doneChan, mgr.displayName, mgr.wdPath, mgr.exePath, mgr.exeName, mgr.args...)
 	for {
 		select {
 		case <-mgr.ctx.Done():
-			flog.Printf("[%s] Manager exiting ctx done\n", mgr.displayName)
+			flog.Printf("[mgr][%s] exiting: ctx done\n", mgr.displayName)
 			mgr.setState(reporter.AppStateStopped)
 			run.Stop()
 			return
@@ -143,27 +143,25 @@ func parse(mgr *manager, run *runner.ProcessRunner) {
 		mgr.setPID(run.PID())
 		select {
 		case line := <-mgr.outChan:
-			if !mgr.isOverseerLog {
-				return
-			}
+			//if !mgr.isOverseerLog {
+			//	return
+			//}
 			mgr.lineParse(line)
-
-			flog.Printf("[%s] Manager line: %s\n", mgr.displayName, line)
 		case <-mgr.ctx.Done():
-			flog.Printf("[%s] Manager exiting ctx done\n", mgr.displayName)
+			flog.Printf("[mgr][%s] exiting parser: ctx done\n", mgr.displayName)
 			return
 		case <-mgr.doneChan:
 			mgr.restartCount++
 
-			flog.Printf("[%s] Manager exited after %s seconds, %d restarts. Last error: %s\n", mgr.displayName, time.Since(start).Round(time.Second), mgr.restartCount, mgr.lastError)
+			flog.Printf("[mgr][%s] exited after %s seconds, %d restarts. Last error: %s\n", mgr.displayName, time.Since(start).Round(time.Second), mgr.restartCount, mgr.lastError)
 			if time.Since(start) > 3*time.Minute {
 				mgr.startDelay = 0
 			}
-			mgr.startDelay += 3000 * time.Millisecond
-			if mgr.startDelay > 30000*time.Millisecond {
-				mgr.startDelay = 5000 * time.Millisecond
+			mgr.startDelay += 10000 * time.Millisecond
+			if mgr.startDelay > 60000*time.Millisecond {
+				mgr.startDelay = 10000 * time.Millisecond
 			}
-			flog.Printf("[%s] Restarting in %s\n", mgr.displayName, mgr.startDelay)
+			flog.Printf("[mgr][%s] restarting in %s\n", mgr.displayName, mgr.startDelay)
 			mgr.lastError = ""
 			mgr.setState(reporter.AppStateRestarting)
 			mgr.errorCooldown = time.Now().Add(30 * time.Minute)
@@ -180,10 +178,9 @@ func parse(mgr *manager, run *runner.ProcessRunner) {
 
 func (mgr *manager) lineParse(line string) {
 	if strings.Contains(line, "[Error]") {
-
 		mgr.lastError = line
 		mgr.lastErrorAt = time.Now()
-		flog.Printf("[%s] Error: %s\n", mgr.displayName, line)
+		flog.Printf("[%s] error: %s\n", mgr.displayName, line)
 		mgr.errorCount++
 		if mgr.errorCount >= 10 || mgr.state == reporter.AppStateStarting {
 			mgr.errorCooldown = time.Now().Add(30 * time.Minute)
@@ -191,8 +188,10 @@ func (mgr *manager) lineParse(line string) {
 		}
 		return
 	}
+	flog.Printf("[%s] line: %s\n", mgr.displayName, line)
+
 	if strings.Contains(mgr.exeName, "zone") && strings.Contains(line, "Entering sleep mode") {
-		flog.Printf("[%s] Entering sleep mode\n", mgr.displayName)
+		flog.Printf("[%s] entering sleep mode\n", mgr.displayName)
 		mgr.setState(reporter.AppStateSleeping)
 		return
 	}
@@ -200,18 +199,18 @@ func (mgr *manager) lineParse(line string) {
 	if strings.Contains(mgr.exeName, "zone") &&
 		mgr.state == reporter.AppStateSleeping &&
 		strings.Contains(line, "Zone booted successfully") {
-		flog.Printf("[%s] Zone booted successfully\n", mgr.displayName)
+		flog.Printf("[%s] booted successfully\n", mgr.displayName)
 		mgr.setState(reporter.AppStateRunning)
 		return
 	}
 
 	if mgr.exeName == "world" && strings.Contains(line, "Starting EQ Network server on") {
-		flog.Printf("[world] Started, got 'Starting EQ Network server on'\n")
+		flog.Printf("[%s] got 'Starting EQ Network server on'\n", mgr.displayName)
 		mgr.setState(reporter.AppStateRunning)
 		return
 	}
 	if mgr.exeName == "ucs" && strings.Contains(line, "Connected to World") {
-		flog.Printf("[ucs] Connected to World\n")
+		flog.Printf("[%s] Connected to World\n", mgr.displayName)
 		mgr.setState(reporter.AppStateRunning)
 		return
 	}
